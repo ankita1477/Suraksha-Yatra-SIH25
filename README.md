@@ -29,8 +29,38 @@
 
 We're basically creating a **digital safety net** for travelers - because nobody should have to worry about safety when they're busy making memories! 📸✨
 
+## 📚 Table of Contents
+
+<div align="center">
+  <img src="https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif" width="150"/>
+  <p><em>Navigate like a pro! 🧭</em></p>
+</div>
+
+### 🎯 **Quick Navigation**
+| Section | Description | Jump To |
+|---------|-------------|---------|
+| 🎯 **Problem Statement** | SIH 2025 details and objectives | [View](#🎯-problem-statement) |
+| 🌟 **Key Features** | Our superpowers and capabilities | [View](#🌟-key-features-aka-our-superpowers) |
+| 🏗️ **System Architecture** | Technical system design | [View](#🏗️-system-architecture) |
+| 🛠️ **Technology Stack** | Our arsenal of technologies | [View](#🛠️-technology-stack-our-arsenal-of-awesomeness) |
+| 🚀 **Getting Started** | Installation and setup guide | [View](#🚀-getting-started-lets-build-something-amazing) |
+| ⚡ **6-Day MVP Plan** | Sprint plan and daily goals | [View](#⚡-6-day-mvp-sprint-plan-crunch-time-champions) |
+| 👥 **Team Responsibilities** | Individual member assignments | [View](#👥-individual-team-member-responsibilities) |
+| 📞 **Team & Contact** | Meet the team and get in touch | [View](#👨‍💻👩‍💻-meet-our-amazing-team-the-dream-squad) |
+
+### 🎯 **Development Focus Areas**
+| Area | Lead | Key Tech | Status |
+|------|------|----------|--------|
+| 📱 **Mobile App** | Ankita | React Native + AI/ML | 🔄 In Planning |
+| 🗄️ **Backend** | Saswat | Express.js + PostgreSQL | 🔄 In Planning |
+| 🌐 **Dashboard** | Sahil | React + Vite | 🔄 In Planning |
+| 📊 **Presentation** | Anchal | PPT + Demo | 🔄 In Planning |
+| 🔍 **Research** | Juhi | Q&A + Analysis | 🔄 In Planning |
+| 📝 **Documentation** | Anwesha | Guides + Content | 🔄 In Planning |
+
+---
+
 ### 🎯 Problem Statement
-- **Ministry**: Development of North Eastern Region / Tourism / Home Affairs
 - **Category**: Software (Travel & Tourism Safety)  
 - **Problem ID**: SIH25-PS-25002
 
@@ -197,59 +227,6 @@ graph TD
   <img src="https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif" width="200"/>
   <p><em>You did it! Everything is up and running! 🎊</em></p>
 </div>
-
----
-
-## 📁 Project Structure
-
-```
-Suraksha-Yatra-SIH25/
-│
-├── 📱 mobile-app/              # React Native Expo App
-│   ├── src/
-│   │   ├── components/
-│   │   ├── screens/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── App.js
-│   └── package.json
-│
-├── 🖥️ dashboard/               # React.js Dashboard
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── public/
-│   └── package.json
-│
-├── ⚙️ backend/                 # Express.js API
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middleware/
-│   │   └── services/
-│   ├── server.js
-│   └── package.json
-│
-├── 🤖 ai-engine/              # AI/ML Services
-│   ├── models/
-│   ├── services/
-│   ├── utils/
-│   ├── app.py
-│   └── requirements.txt
-│
-├── ⛓️ blockchain/              # Smart Contracts
-│   ├── contracts/
-│   ├── migrations/
-│   ├── test/
-│   └── truffle-config.js
-│
-├── 📚 docs/                   # Documentation
-├── 🧪 tests/                  # Test files
-└── 📋 README.md
-```
 
 ---
 
