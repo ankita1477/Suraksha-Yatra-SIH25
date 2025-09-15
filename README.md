@@ -6,7 +6,22 @@
   <img src="https://media.giphy.com/media/26tn33aiTi1jkl6H6/giphy.gif" width="150"/>
 </div>
 
-## 📋 Project Overview
+## ### � **Day 5: Integration & Testing** (Everything Comes Together!)
+**Focus**: System Integration + Quality Assurance
+
+**💻 Development Tasks**:
+- [ ] End-to-end testing of complete system
+- [ ] Security hardening + API optimization
+- [ ] Mobile app final testing + demo scenarios
+- [ ] Dashboard final testing + cross-browser compatibility
+- [ ] Bug fixes + performance optimization
+- [ ] Mobile ↔ Backend ↔ Dashboard complete flow testing
+- [ ] Prepare live demo environment
+
+**📊 Documentation Tasks**:
+- [ ] Presentation rehearsal + timing optimization
+- [ ] Final Q&A preparation + judge interaction practice
+- [ ] Demo support documentation + troubleshooting guide
 
 **Suraksha Yatra** is our super cool 😎 Smart Tourist Safety Monitoring & Incident Response System built for SIH 2025! Think of it as a digital superhero 🦸‍♂️ that watches over tourists 24/7 using the awesome power of Blockchain, AI, and Mobile tech! 
 
@@ -255,91 +270,75 @@ Suraksha-Yatra-SIH25/
 ### 🏃‍♂️ **Day 1: Foundation & Setup** (Setup Squad Assemble!)
 **Focus**: Core Development Setup + Research Foundation
 
-**💻 Development Team**:
-- **Morning (9-12 PM)**:
-  - [ ] **Saswat**: Setup Express.js backend + PostgreSQL database + basic APIs
-  - [ ] **Ankita**: Initialize React Native Expo project with navigation
-  - [ ] **Sahil**: Setup React + Vite dashboard project structure
-  
-- **Afternoon (1-6 PM)**:
-  - [ ] **Saswat**: Database schema design + authentication APIs (JWT)
-  - [ ] **Ankita**: Basic mobile app screens (Login, Home, Dashboard)
-  - [ ] **Sahil**: Dashboard layout with routing and basic components
+**💻 Development Tasks**:
+- [ ] Setup Express.js backend + PostgreSQL database + basic APIs
+- [ ] Initialize React Native Expo project with navigation
+- [ ] Setup React + Vite dashboard project structure
+- [ ] Database schema design + authentication APIs (JWT)
+- [ ] Basic mobile app screens (Login, Home, Dashboard)
+- [ ] Dashboard layout with routing and basic components
 
-**📊 Documentation Team**:
-- **All Day**:
-  - [ ] **Anchal**: Start creating presentation slides + project overview
-  - [ ] **Juhi**: Research competitor analysis + market validation
-  - [ ] **Anwesha**: Document system architecture + technical specifications
+**📊 Documentation Tasks**:
+- [ ] Start creating presentation slides + project overview
+- [ ] Research competitor analysis + market validation
+- [ ] Document system architecture + technical specifications
 
 **🎯 End of Day Goal**: Working project setup + Initial presentation framework
 
 ### 📱 **Day 2: Core Features Development** (Mobile + Backend Magic!)
-**Lead**: Development Team Focus
+**Focus**: Essential Features Implementation
 
-**💻 Development Team**:
-- **Morning**:
-  - [ ] **Ankita**: Implement GPS tracking and maps in React Native
-  - [ ] **Ankita**: Add panic button functionality
-  - [ ] **Saswat**: Location APIs + real-time endpoints + Socket.io setup
-  - [ ] **Sahil**: Dashboard maps integration + real-time data display
-  
-- **Afternoon**:
-  - [ ] **Ankita**: Basic geo-fencing implementation
-  - [ ] **Saswat**: User management APIs + location tracking backend
-  - [ ] **Sahil**: Alert management interface on dashboard
+**💻 Development Tasks**:
+- [ ] Implement GPS tracking and maps in React Native
+- [ ] Add panic button functionality in mobile app
+- [ ] Location APIs + real-time endpoints + Socket.io setup
+- [ ] Dashboard maps integration + real-time data display
+- [ ] Basic geo-fencing implementation
+- [ ] User management APIs + location tracking backend
+- [ ] Alert management interface on dashboard
 
-**📊 Documentation Team**:
-- **All Day**:
-  - [ ] **Anchal**: Technical presentation slides + demo flow planning
-  - [ ] **Juhi**: Prepare Q&A scenarios + problem-solution research
-  - [ ] **Anwesha**: Document APIs + user journey mapping
+**📊 Documentation Tasks**:
+- [ ] Technical presentation slides + demo flow planning
+- [ ] Prepare Q&A scenarios + problem-solution research
+- [ ] Document APIs + user journey mapping
 
 **🎯 End of Day Goal**: Mobile app with GPS + panic button, Dashboard showing real-time data
 
 ### 🆔 **Day 3: AI/ML + Smart Features** (Intelligence Day!)
-**Lead**: Ankita (AI/ML) + Backend Integration
+**Focus**: AI/ML Integration + Smart Systems
 
-**💻 Development Team**:
-- **Morning**:
-  - [ ] **Ankita**: Implement basic AI/ML anomaly detection (inactivity, location loss)
-  - [ ] **Ankita**: Route deviation detection in mobile app
-  - [ ] **Saswat**: AI service APIs + integration with mobile app
-  - [ ] **Sahil**: AI alerts display and management on dashboard
-  
-- **Afternoon**:
-  - [ ] **Ankita**: Digital Tourist ID system (simplified blockchain alternative)
-  - [ ] **Saswat**: Tourist profile management + ID generation APIs
-  - [ ] **Sahil**: Tourist management interface on dashboard
+**💻 Development Tasks**:
+- [ ] Implement basic AI/ML anomaly detection (inactivity, location loss)
+- [ ] Route deviation detection in mobile app
+- [ ] AI service APIs + integration with mobile app
+- [ ] AI alerts display and management on dashboard
+- [ ] Digital Tourist ID system (simplified blockchain alternative)
+- [ ] Tourist profile management + ID generation APIs
+- [ ] Tourist management interface on dashboard
 
-**📊 Documentation Team**:
-- **All Day**:
-  - [ ] **Anchal**: AI/ML explanation slides + demo scenarios
-  - [ ] **Juhi**: Safety statistics research + impact analysis
-  - [ ] **Anwesha**: Feature documentation + user guides
+**📊 Documentation Tasks**:
+- [ ] AI/ML explanation slides + demo scenarios
+- [ ] Safety statistics research + impact analysis
+- [ ] Feature documentation + user guides
 
 **🎯 End of Day Goal**: AI-powered anomaly detection + Digital ID system working
 
 ### 🚨 **Day 4: Dashboard & Monitoring** (Mission Control Day!)
-**Lead**: Sahil (Dashboard) + Full Team Integration
+**Focus**: Complete System Integration
 
-**💻 Development Team**:
-- **Morning**:
-  - [ ] **Sahil**: Complete police/tourism dashboard with all features
-  - [ ] **Sahil**: Real-time tourist tracking on maps + incident management
-  - [ ] **Saswat**: Incident management APIs + notification system
-  - [ ] **Ankita**: Family location sharing feature in mobile app
-  
-- **Afternoon**:
-  - [ ] **Sahil**: Dashboard polish + responsive design
-  - [ ] **Saswat**: Performance optimization + API testing
-  - [ ] **Ankita**: Mobile app UI/UX improvements + final features
+**💻 Development Tasks**:
+- [ ] Complete police/tourism dashboard with all features
+- [ ] Real-time tourist tracking on maps + incident management
+- [ ] Incident management APIs + notification system
+- [ ] Family location sharing feature in mobile app
+- [ ] Dashboard polish + responsive design
+- [ ] Performance optimization + API testing
+- [ ] Mobile app UI/UX improvements + final features
 
-**📊 Documentation Team**:
-- **All Day**:
-  - [ ] **Anchal**: Final presentation slides + demo script preparation
-  - [ ] **Juhi**: Comprehensive Q&A preparation + edge case scenarios
-  - [ ] **Anwesha**: Complete project documentation + deployment guide
+**📊 Documentation Tasks**:
+- [ ] Final presentation slides + demo script preparation
+- [ ] Comprehensive Q&A preparation + edge case scenarios
+- [ ] Complete project documentation + deployment guide
 
 **🎯 End of Day Goal**: Complete system with dashboard + mobile app integration
 
@@ -367,50 +366,184 @@ Suraksha-Yatra-SIH25/
 **🎯 End of Day Goal**: Fully integrated and tested MVP ready for demo
 
 ### 🎉 **Day 6: Polish & Demo Preparation** (Showtime!)
-**Lead**: Full Team Demo Preparation
+**Focus**: Final Polish + Demo Readiness
 
-**💻 Development Team**:
-- **Morning**:
-  - [ ] **All**: Final UI/UX polish + minor bug fixes
-  - [ ] **Ankita**: Demo scenarios testing on mobile
-  - [ ] **Saswat**: Live demo server setup + monitoring
-  - [ ] **Sahil**: Dashboard demo preparation + data seeding
-  
-- **Afternoon**:
-  - [ ] **Full Team**: Complete demo rehearsal
-  - [ ] **All**: Final integration testing
-  - [ ] **Presentation**: Final presentation practice with Q&A
+**💻 Development Tasks**:
+- [ ] Final UI/UX polish + minor bug fixes
+- [ ] Demo scenarios testing on mobile
+- [ ] Live demo server setup + monitoring
+- [ ] Dashboard demo preparation + data seeding
+- [ ] Complete demo rehearsal
+- [ ] Final integration testing
 
-**📊 Documentation Team**:
-- **All Day**:
-  - [ ] **Anchal**: Final presentation delivery + demo coordination
-  - [ ] **Juhi**: Q&A session leadership + judge interaction
-  - [ ] **Anwesha**: Technical documentation support during demo
+**📊 Documentation Tasks**:
+- [ ] Final presentation delivery + demo coordination
+- [ ] Q&A session leadership + judge interaction
+- [ ] Technical documentation support during demo
 
 **🎯 End of Day Goal**: Polished MVP + Perfect demo presentation ready!
 
 ---
 
-## 📋 **Team Responsibilities**
+## 📋 **Work Categories**
 
-### 💻 **Development Core (3 Members)**
-- **Ankita Rahi** 👑: React Native + AI/ML integration + Team leadership
-- **Saswat Ranjan Behera** 🗄️: Backend APIs + Database + Server management  
-- **Sahil Behera** 🌐: React Dashboard + Frontend + Web deployment
+### 💻 **Development Work** 
+**Core Technologies**: React Native, Express.js, React + Vite, AI/ML
+- Backend API development and database management
+- Mobile app development with React Native + Expo
+- Frontend dashboard with React + Vite
+- AI/ML integration for anomaly detection
+- Real-time features with Socket.io
+- GPS tracking and geo-fencing
+- Authentication and security
 
-### 📊 **Presentation & Research Team (3 Members)**  
-- **Anchal Kumari** 📊: PPT creation + Presentation delivery + Demo coordination
-- **Juhi Rani** 🔍: Research + Q&A preparation + Judge interaction
-- **Anwesha Mishra** 📝: Documentation + Content creation + Technical writing
+### 📊 **Documentation & Presentation Work**
+**Focus Areas**: Research, PPT, Q&A, Content Creation
+- Presentation slide creation and design
+- Market research and competitor analysis
+- Technical documentation and user guides
+- Q&A preparation and judge interaction
+- Demo script and scenario planning
+- Content creation and storytelling
 
-### ⏰ **Daily Sprint Structure**
-- **9:00-9:30 AM**: Team standup (all 6 members)
-- **9:30-12:00 PM**: Focused work sessions
-- **12:00-1:00 PM**: Lunch + informal sync
-- **1:00-3:00 PM**: Deep work + integration
-- **3:00-3:15 PM**: Quick team sync
-- **3:15-6:00 PM**: Final push + testing
-- **6:00-6:30 PM**: Demo prep + next day planning
+---
+
+## 👥 **Individual Team Member Responsibilities**
+
+<div align="center">
+  <img src="https://media.giphy.com/media/l1ughbsd9qXz2s9SE/giphy.gif" width="200"/>
+  <p><em>Everyone has their superpower! 💪</em></p>
+</div>
+
+### 👑 **Ankita Rahi - Team Lead & React Native + AI/ML Developer**
+**Primary Focus**: Mobile App Development + AI Integration + Team Coordination
+
+**Daily Responsibilities**:
+- **Day 1**: Setup React Native Expo project + Basic mobile screens
+- **Day 2**: Implement GPS tracking, maps, and panic button in mobile app
+- **Day 3**: Develop AI/ML anomaly detection + Route deviation algorithms
+- **Day 4**: Add family location sharing + Mobile app AI integration
+- **Day 5**: Mobile app testing + AI system optimization
+- **Day 6**: Mobile demo preparation + Team coordination
+
+**Key Deliverables**:
+- ✅ Complete React Native mobile application
+- ✅ AI/ML anomaly detection system
+- ✅ GPS tracking and panic button functionality
+- ✅ Team leadership and project coordination
+
+---
+
+### 🗄️ **Saswat Ranjan Behera - Backend Developer**
+**Primary Focus**: Express.js APIs + Database + Server Management
+
+**Daily Responsibilities**:
+- **Day 1**: Setup Express.js backend + PostgreSQL + Authentication APIs
+- **Day 2**: Location APIs + Real-time endpoints + Socket.io setup
+- **Day 3**: AI service APIs + Tourist profile management APIs
+- **Day 4**: Incident management APIs + Notification system
+- **Day 5**: Security hardening + API optimization + Performance testing
+- **Day 6**: Live demo server setup + Database monitoring
+
+**Key Deliverables**:
+- ✅ Complete backend API system
+- ✅ Database design and management
+- ✅ Real-time communication system
+- ✅ Authentication and security implementation
+
+---
+
+### 🌐 **Sahil Behera - Frontend Dashboard Developer**
+**Primary Focus**: React + Vite Dashboard + Web Interface
+
+**Daily Responsibilities**:
+- **Day 1**: Setup React + Vite project + Dashboard routing and layout
+- **Day 2**: Dashboard maps integration + Real-time data display
+- **Day 3**: AI alerts display + Tourist management interface
+- **Day 4**: Complete police/tourism dashboard + Incident management UI
+- **Day 5**: Dashboard testing + Cross-browser compatibility + UI polish
+- **Day 6**: Dashboard demo preparation + Data seeding for demo
+
+**Key Deliverables**:
+- ✅ Complete web dashboard for police/tourism officers
+- ✅ Real-time maps and tracking interface
+- ✅ Incident management system UI
+- ✅ Responsive and polished web application
+
+---
+
+### 📊 **Anchal Kumari - PPT Lead & Presentation Specialist**
+**Primary Focus**: Presentation Creation + Demo Coordination + Slide Design
+
+**Daily Responsibilities**:
+- **Day 1**: Start presentation slides + Project overview + Design framework
+- **Day 2**: Technical presentation slides + Demo flow planning
+- **Day 3**: AI/ML explanation slides + Demo scenarios creation
+- **Day 4**: Final presentation slides + Demo script preparation
+- **Day 5**: Presentation rehearsal + Timing optimization + Slide refinement
+- **Day 6**: Final presentation delivery + Demo coordination + Judge interaction
+
+**Key Deliverables**:
+- ✅ Professional presentation slides (20-25 slides)
+- ✅ Demo script and flow planning
+- ✅ Visual design and storytelling
+- ✅ Presentation delivery and coordination
+
+---
+
+### 🔍 **Juhi Rani - Research & Q&A Specialist**
+**Primary Focus**: Market Research + Competitor Analysis + Q&A Preparation
+
+**Daily Responsibilities**:
+- **Day 1**: Competitor analysis + Market validation research
+- **Day 2**: Problem-solution research + Q&A scenarios preparation
+- **Day 3**: Safety statistics research + Impact analysis + Use cases
+- **Day 4**: Edge case scenarios + Comprehensive Q&A preparation
+- **Day 5**: Judge interaction practice + Technical Q&A refinement
+- **Day 6**: Q&A session leadership + Judge questions handling
+
+**Key Deliverables**:
+- ✅ Comprehensive market research document
+- ✅ Competitor analysis and differentiation
+- ✅ Complete Q&A preparation (50+ questions)
+- ✅ Judge interaction expertise
+
+---
+
+### 📝 **Anwesha Mishra - Documentation & Content Creator**
+**Primary Focus**: Technical Documentation + User Guides + Content Writing
+
+**Daily Responsibilities**:
+- **Day 1**: System architecture documentation + Technical specifications
+- **Day 2**: API documentation + User journey mapping
+- **Day 3**: Feature documentation + User guides + Content writing
+- **Day 4**: Complete project documentation + Deployment guide
+- **Day 5**: Demo support documentation + Troubleshooting guide
+- **Day 6**: Technical documentation support + Content assistance during demo
+
+**Key Deliverables**:
+- ✅ Complete technical documentation
+- ✅ User guides and API documentation
+- ✅ Project deployment guide
+- ✅ Demo support materials
+
+---
+
+## 🤝 **Collaboration Guidelines**
+
+### 💻 **Development Team Sync** (Ankita, Saswat, Sahil)
+- **Daily 10 AM**: Technical standup and blocker resolution
+- **Daily 3 PM**: Integration testing and code review
+- **Daily 6 PM**: Demo preparation and next day planning
+
+### 📊 **Presentation Team Sync** (Anchal, Juhi, Anwesha)
+- **Daily 11 AM**: Content and research alignment
+- **Daily 4 PM**: Presentation review and feedback
+- **Daily 5:30 PM**: Demo script practice and coordination
+
+### 🎯 **Full Team Meetings**
+- **Daily 9 AM**: All-hands standup (30 mins max)
+- **Daily 6:30 PM**: End-of-day progress review and next day planning
 
 ---
 
