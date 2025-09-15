@@ -253,98 +253,164 @@ Suraksha-Yatra-SIH25/
 </div>
 
 ### 🏃‍♂️ **Day 1: Foundation & Setup** (Setup Squad Assemble!)
-**Team Focus**: All hands on deck for project foundation
+**Focus**: Core Development Setup + Research Foundation
+
+**💻 Development Team**:
 - **Morning (9-12 PM)**:
-  - [ ] **Ankita & Sahil**: Setup Express.js backend + PostgreSQL database
-  - [ ] **Juhi & Anchal**: Initialize React Native Expo project with navigation
-  - [ ] **Anwesha**: Setup basic Ethereum testnet environment
-  - [ ] **Saswat**: Prepare Python environment for AI services
+  - [ ] **Saswat**: Setup Express.js backend + PostgreSQL database + basic APIs
+  - [ ] **Ankita**: Initialize React Native Expo project with navigation
+  - [ ] **Sahil**: Setup React + Vite dashboard project structure
   
 - **Afternoon (1-6 PM)**:
-  - [ ] **All Team**: Basic authentication system (JWT)
-  - [ ] **Sahil**: Database schema design and setup
-  - [ ] **Juhi**: Basic mobile app screens (Login, Home, Profile)
-  - [ ] **Anchal**: Start React.js dashboard framework
+  - [ ] **Saswat**: Database schema design + authentication APIs (JWT)
+  - [ ] **Ankita**: Basic mobile app screens (Login, Home, Dashboard)
+  - [ ] **Sahil**: Dashboard layout with routing and basic components
 
-**🎯 End of Day Goal**: Working login system across all platforms
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: Start creating presentation slides + project overview
+  - [ ] **Juhi**: Research competitor analysis + market validation
+  - [ ] **Anwesha**: Document system architecture + technical specifications
 
-### 📱 **Day 2: Core Mobile App** (Mobile Magic Day!)
-**Lead**: Juhi (Mobile) + Anchal (Frontend)
+**🎯 End of Day Goal**: Working project setup + Initial presentation framework
+
+### 📱 **Day 2: Core Features Development** (Mobile + Backend Magic!)
+**Lead**: Development Team Focus
+
+**💻 Development Team**:
 - **Morning**:
-  - [ ] **Juhi**: Implement GPS tracking and maps integration
-  - [ ] **Juhi**: Add panic button functionality
-  - [ ] **Anchal**: Dashboard layout with maps
-  - [ ] **Sahil**: Location APIs and real-time endpoints
+  - [ ] **Ankita**: Implement GPS tracking and maps in React Native
+  - [ ] **Ankita**: Add panic button functionality
+  - [ ] **Saswat**: Location APIs + real-time endpoints + Socket.io setup
+  - [ ] **Sahil**: Dashboard maps integration + real-time data display
   
 - **Afternoon**:
-  - [ ] **Juhi**: Basic geo-fencing implementation
-  - [ ] **Anchal**: Real-time alerts display on dashboard
-  - [ ] **Ankita**: Integration testing between mobile and backend
+  - [ ] **Ankita**: Basic geo-fencing implementation
+  - [ ] **Saswat**: User management APIs + location tracking backend
+  - [ ] **Sahil**: Alert management interface on dashboard
 
-**🎯 End of Day Goal**: Mobile app with GPS, panic button, and dashboard showing alerts
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: Technical presentation slides + demo flow planning
+  - [ ] **Juhi**: Prepare Q&A scenarios + problem-solution research
+  - [ ] **Anwesha**: Document APIs + user journey mapping
 
-### 🆔 **Day 3: Digital ID & Blockchain** (Identity Crisis Solved!)
-**Lead**: Anwesha (Blockchain) + Ankita (Integration)
+**🎯 End of Day Goal**: Mobile app with GPS + panic button, Dashboard showing real-time data
+
+### 🆔 **Day 3: AI/ML + Smart Features** (Intelligence Day!)
+**Lead**: Ankita (AI/ML) + Backend Integration
+
+**💻 Development Team**:
 - **Morning**:
-  - [ ] **Anwesha**: Smart contract for Digital Tourist ID
-  - [ ] **Anwesha**: Deploy contract on Ethereum testnet
-  - [ ] **Sahil**: Blockchain integration APIs
-  - [ ] **Juhi**: User registration with blockchain ID generation
+  - [ ] **Ankita**: Implement basic AI/ML anomaly detection (inactivity, location loss)
+  - [ ] **Ankita**: Route deviation detection in mobile app
+  - [ ] **Saswat**: AI service APIs + integration with mobile app
+  - [ ] **Sahil**: AI alerts display and management on dashboard
   
 - **Afternoon**:
-  - [ ] **Ankita**: Connect mobile app to blockchain APIs
-  - [ ] **Anchal**: Display Digital ID on dashboard
-  - [ ] **All**: Testing blockchain ID creation flow
+  - [ ] **Ankita**: Digital Tourist ID system (simplified blockchain alternative)
+  - [ ] **Saswat**: Tourist profile management + ID generation APIs
+  - [ ] **Sahil**: Tourist management interface on dashboard
 
-**🎯 End of Day Goal**: Working blockchain-based Digital Tourist ID system
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: AI/ML explanation slides + demo scenarios
+  - [ ] **Juhi**: Safety statistics research + impact analysis
+  - [ ] **Anwesha**: Feature documentation + user guides
 
-### 🤖 **Day 4: AI/ML Intelligence** (Brain Power Activated!)
-**Lead**: Saswat (AI/ML) + Backend Integration
+**🎯 End of Day Goal**: AI-powered anomaly detection + Digital ID system working
+
+### 🚨 **Day 4: Dashboard & Monitoring** (Mission Control Day!)
+**Lead**: Sahil (Dashboard) + Full Team Integration
+
+**💻 Development Team**:
 - **Morning**:
-  - [ ] **Saswat**: Basic anomaly detection algorithms (inactivity, location loss)
-  - [ ] **Saswat**: Route deviation detection logic
-  - [ ] **Sahil**: AI service APIs and integration endpoints
-  - [ ] **Ankita**: Connect AI alerts to notification system
+  - [ ] **Sahil**: Complete police/tourism dashboard with all features
+  - [ ] **Sahil**: Real-time tourist tracking on maps + incident management
+  - [ ] **Saswat**: Incident management APIs + notification system
+  - [ ] **Ankita**: Family location sharing feature in mobile app
   
 - **Afternoon**:
-  - [ ] **Saswat**: Real-time anomaly monitoring service
-  - [ ] **Anchal**: AI alerts display on dashboard
-  - [ ] **Juhi**: Anomaly notifications in mobile app
+  - [ ] **Sahil**: Dashboard polish + responsive design
+  - [ ] **Saswat**: Performance optimization + API testing
+  - [ ] **Ankita**: Mobile app UI/UX improvements + final features
 
-**🎯 End of Day Goal**: AI system detecting and alerting on tourist anomalies
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: Final presentation slides + demo script preparation
+  - [ ] **Juhi**: Comprehensive Q&A preparation + edge case scenarios
+  - [ ] **Anwesha**: Complete project documentation + deployment guide
 
-### 🚨 **Day 5: Dashboard & Monitoring** (Mission Control Day!)
-**Lead**: Anchal (Dashboard) + All Team Integration
+**🎯 End of Day Goal**: Complete system with dashboard + mobile app integration
+
+### � **Day 5: Integration & Testing** (Everything Comes Together!)
+**Lead**: Full Team Collaboration
+
+**💻 Development Team**:
 - **Morning**:
-  - [ ] **Anchal**: Complete police/tourism dashboard
-  - [ ] **Anchal**: Real-time tourist tracking on maps
-  - [ ] **Sahil**: Incident management APIs
-  - [ ] **Ankita**: Dashboard-mobile real-time sync
+  - [ ] **All Dev Team**: End-to-end testing of complete system
+  - [ ] **Saswat**: Security hardening + API optimization
+  - [ ] **Ankita**: Mobile app final testing + demo scenarios
+  - [ ] **Sahil**: Dashboard final testing + cross-browser compatibility
   
 - **Afternoon**:
-  - [ ] **Anchal**: Incident logging and management
-  - [ ] **All Team**: End-to-end testing of complete flow
-  - [ ] **Juhi**: Family location sharing feature
-  - [ ] **Saswat**: Fine-tune AI parameters
+  - [ ] **All Dev Team**: Bug fixes + performance optimization
+  - [ ] **Integration**: Mobile ↔ Backend ↔ Dashboard complete flow testing
+  - [ ] **Demo Setup**: Prepare live demo environment
 
-**🎯 End of Day Goal**: Complete dashboard with real-time monitoring and incident management
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: Presentation rehearsal + timing optimization
+  - [ ] **Juhi**: Final Q&A preparation + judge interaction practice
+  - [ ] **Anwesha**: Demo support documentation + troubleshooting guide
 
-### 🚀 **Day 6: Polish & Demo Prep** (Showtime!)
-**Lead**: Ankita (Project Management) + All Team
+**🎯 End of Day Goal**: Fully integrated and tested MVP ready for demo
+
+### 🎉 **Day 6: Polish & Demo Preparation** (Showtime!)
+**Lead**: Full Team Demo Preparation
+
+**💻 Development Team**:
 - **Morning**:
-  - [ ] **All**: Bug fixes and performance optimization
-  - [ ] **Anchal**: UI/UX polish and responsive design
-  - [ ] **Juhi**: Mobile app final testing and UI improvements
-  - [ ] **Sahil**: Security hardening and API optimization
+  - [ ] **All**: Final UI/UX polish + minor bug fixes
+  - [ ] **Ankita**: Demo scenarios testing on mobile
+  - [ ] **Saswat**: Live demo server setup + monitoring
+  - [ ] **Sahil**: Dashboard demo preparation + data seeding
   
 - **Afternoon**:
-  - [ ] **All**: Demo preparation and presentation setup
-  - [ ] **Ankita**: Documentation and deployment guide
-  - [ ] **Saswat**: Demo scenarios for AI features
-  - [ ] **Anwesha**: Blockchain demo preparation
-  - [ ] **All**: Final integration testing and demo rehearsal
+  - [ ] **Full Team**: Complete demo rehearsal
+  - [ ] **All**: Final integration testing
+  - [ ] **Presentation**: Final presentation practice with Q&A
 
-**🎯 End of Day Goal**: Polished MVP ready for presentation!
+**📊 Documentation Team**:
+- **All Day**:
+  - [ ] **Anchal**: Final presentation delivery + demo coordination
+  - [ ] **Juhi**: Q&A session leadership + judge interaction
+  - [ ] **Anwesha**: Technical documentation support during demo
+
+**🎯 End of Day Goal**: Polished MVP + Perfect demo presentation ready!
+
+---
+
+## 📋 **Team Responsibilities**
+
+### 💻 **Development Core (3 Members)**
+- **Ankita Rahi** 👑: React Native + AI/ML integration + Team leadership
+- **Saswat Ranjan Behera** 🗄️: Backend APIs + Database + Server management  
+- **Sahil Behera** 🌐: React Dashboard + Frontend + Web deployment
+
+### 📊 **Presentation & Research Team (3 Members)**  
+- **Anchal Kumari** 📊: PPT creation + Presentation delivery + Demo coordination
+- **Juhi Rani** 🔍: Research + Q&A preparation + Judge interaction
+- **Anwesha Mishra** 📝: Documentation + Content creation + Technical writing
+
+### ⏰ **Daily Sprint Structure**
+- **9:00-9:30 AM**: Team standup (all 6 members)
+- **9:30-12:00 PM**: Focused work sessions
+- **12:00-1:00 PM**: Lunch + informal sync
+- **1:00-3:00 PM**: Deep work + integration
+- **3:00-3:15 PM**: Quick team sync
+- **3:15-6:00 PM**: Final push + testing
+- **6:00-6:30 PM**: Demo prep + next day planning
 
 ---
 
@@ -510,16 +576,16 @@ Suraksha-Yatra-SIH25/
 
 | 🦸‍♀️🦸‍♂️ **Team Member** | 🎯 **Role** | 💫 **Superpower** |
 |---|---|---|
-| **Ankita Rahi** 👑 | Team Lead & Full Stack Developer | *Making impossible possible* |
-| **Anchal Kumari** 💻 | Frontend Specialist | *UI/UX Magic* |
-| **Juhi Rani** 📱 | Mobile App Developer | *React Native Ninja* |
-| **Saswat Ranjan Behera** 🤖 | AI/ML Engineer | *Algorithm Wizard* |
-| **Anwesha Mishra** ⛓️ | Blockchain Developer | *Decentralization Expert* |
-| **Sahil Behera** 🗄️ | Backend & DevOps | *Server Superhero* |
+| **Ankita Rahi** 👑 | Team Lead & React Native + AI/ML | *Mobile AI Magic Maker* |
+| **Saswat Ranjan Behera** �️ | Backend Developer (Express.js) | *Server Superhero* |
+| **Sahil Behera** 🌐 | Frontend Developer (React + Vite) | *Web Dashboard Wizard* |
+| **Anchal Kumari** 📊 | Documentation & PPT Lead | *Presentation Queen* |
+| **Juhi Rani** 🔍 | Research & Q&A Specialist | *Knowledge Hunter* |
+| **Anwesha Mishra** � | Documentation & Content Creator | *Story Teller* |
 
 <div align="center">
   <img src="https://media.giphy.com/media/3oriNYQX2lC6dfW2Ji/giphy.gif" width="180"/>
-  <p><em>Together we code, together we conquer! 💪</em></p>
+  <p><em>3 Coders + 3 Presenters = Perfect Balance! 💪</em></p>
 </div>
 
 ### 📬 Get in Touch
