@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
-import { createPanicRouter } from './routes/panic';
+import { createPanicRouter, createPanicQueryRouter } from './routes/panic';
 import { locationRouter } from './routes/location';
 import { incidentsRouter } from './routes/incidents';
 import { Server } from 'socket.io';
@@ -28,6 +28,9 @@ export function attachRealtime(app: express.Express) {
 
   // Panic route needs io
   app.use('/api/panic', createPanicRouter(io));
+  
+  // Panic alerts query routes
+  app.use('/api/panic-alerts', createPanicQueryRouter());
 
   io.on('connection', socket => {
     // Basic connection log
