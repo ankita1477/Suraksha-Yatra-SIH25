@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import type { Server } from 'socket.io';
 import { PanicAlertPayload } from '../types';
+import { PanicAlertModel } from '../models/PanicAlert';
 
 export function createPanicRouter(io: Server) {
   const router = Router();
@@ -13,7 +14,7 @@ export function createPanicRouter(io: Server) {
     timestamp: z.string().optional()
   });
 
-  router.post('/', authMiddleware, (req: AuthRequest, res) => {
+  router.post('/', authMiddleware, async (req: AuthRequest, res) => {
     const parse = panicSchema.safeParse(req.body);
     if (!parse.success) return res.status(400).json({ error: 'Invalid input', issues: parse.error.issues });
     const { lat, lng } = parse.data;
@@ -23,9 +24,14 @@ export function createPanicRouter(io: Server) {
       timestamp: parse.data.timestamp || new Date().toISOString(),
       userId: req.user!.id
     };
-    // Emit real-time event
+    // Persist to Mongo
+    await PanicAlertModel.create({
+      userId: payload.userId,
+      lat: payload.lat,
+      lng: payload.lng,
+      timestamp: payload.timestamp
+    });
     io.emit('panic_alert', payload);
-    // For now just respond success (later persist to DB)
     res.status(201).json({ status: 'ok', alert: payload });
   });
 

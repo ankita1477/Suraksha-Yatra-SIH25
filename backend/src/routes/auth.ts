@@ -2,24 +2,27 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { signToken } from '../services/jwt';
 import { User } from '../types';
+import { UserModel } from '../models/User';
 
 export const authRouter = Router();
 
-// Temporary in-memory user for MVP
-const mockUser: User = { id: 'u1', email: 'demo@tourist.app', role: 'tourist' };
+// For MVP we create or fetch a user record on login
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(4)
 });
 
-authRouter.post('/login', (req, res) => {
+authRouter.post('/login', async (req, res) => {
   const parse = loginSchema.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid input', issues: parse.error.issues });
 
   const { email } = parse.data;
-  // For MVP any email/password returns mock user with that email
-  const user: User = { ...mockUser, email };
+  let userDoc = await UserModel.findOne({ email });
+  if (!userDoc) {
+    userDoc = await UserModel.create({ email });
+  }
+  const user: User = { id: userDoc.id, email: userDoc.email, role: userDoc.role };
   const token = signToken(user);
-  res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  res.json({ token, user });
 });
