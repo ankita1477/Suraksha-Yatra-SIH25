@@ -1,10 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { requireRole } from '../middleware/authorize';
+// Local minimal role guard to avoid import resolution issue
+function requireRole(...roles: string[]) {
+  return (req: any, res: any, next: any) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+    next();
+  };
+}
 import type { Server } from 'socket.io';
 import { PanicAlertPayload } from '../types';
 import { PanicAlertModel } from '../models/PanicAlert';
+import { IncidentModel } from '../models/Incident';
 
 export function createPanicRouter(io: Server) {
   const router = Router();
@@ -26,7 +34,7 @@ export function createPanicRouter(io: Server) {
       userId: req.user!.id
     };
     // Persist to Mongo
-    await PanicAlertModel.create({
+    const alertDoc = await PanicAlertModel.create({
       userId: payload.userId,
       lat: payload.lat,
       lng: payload.lng,
@@ -34,7 +42,16 @@ export function createPanicRouter(io: Server) {
       location: { type: 'Point', coordinates: [payload.lng, payload.lat] }
     });
     io.emit('panic_alert', payload);
-    res.status(201).json({ status: 'ok', alert: payload });
+    const incident = await IncidentModel.create({
+      type: 'panic',
+      userId: req.user!.id,
+      alertId: alertDoc.id,
+      severity: 'critical',
+      description: 'Panic Alert',
+      location: { type: 'Point', coordinates: [payload.lng, payload.lat] }
+    });
+    io.emit('incident', incident);
+    res.status(201).json({ status: 'ok', alert: payload, incident });
   });
 
   return router;

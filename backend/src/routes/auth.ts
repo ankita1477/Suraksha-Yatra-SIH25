@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { signToken } from '../services/jwt';
+import { signToken, signRefreshToken, verifyRefreshToken } from '../services/jwt';
 import { User } from '../types';
 import { UserModel } from '../models/User';
 import bcrypt from 'bcrypt';
+import { generateDID } from '../utils/did';
 
 export const authRouter = Router();
 
@@ -24,10 +25,12 @@ authRouter.post('/register', async (req, res) => {
   const existing = await UserModel.findOne({ email });
   if (existing) return res.status(409).json({ error: 'User exists' });
   const passwordHash = await bcrypt.hash(password, 10);
-  const created = await UserModel.create({ email, passwordHash });
+  const did = generateDID(email);
+  const created = await UserModel.create({ email, passwordHash, did });
   const user: User = { id: created.id, email: created.email, role: created.role };
   const token = signToken(user);
-  res.status(201).json({ token, user });
+  const refresh = await signRefreshToken(user.id);
+  res.status(201).json({ token, refreshToken: refresh, user: { ...user, did } });
 });
 
 authRouter.post('/login', async (req, res) => {
@@ -40,5 +43,22 @@ authRouter.post('/login', async (req, res) => {
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
   const user: User = { id: userDoc.id, email: userDoc.email, role: userDoc.role };
   const token = signToken(user);
-  res.json({ token, user });
+  const refresh = await signRefreshToken(user.id);
+  res.json({ token, refreshToken: refresh, user });
+});
+
+authRouter.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'refreshToken required' });
+  try {
+    const { userId } = await verifyRefreshToken(refreshToken);
+    const userDoc = await UserModel.findById(userId);
+    if (!userDoc) return res.status(401).json({ error: 'Invalid refresh' });
+    const user: User = { id: userDoc.id, email: userDoc.email, role: userDoc.role };
+    const token = signToken(user);
+    const refresh = await signRefreshToken(user.id);
+    res.json({ token, refreshToken: refresh, user });
+  } catch {
+    res.status(401).json({ error: 'Invalid refresh' });
+  }
 });

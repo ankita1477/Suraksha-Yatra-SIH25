@@ -3,6 +3,8 @@ import cors from 'cors';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
 import { createPanicRouter } from './routes/panic';
+import { locationRouter } from './routes/location';
+import { incidentsRouter } from './routes/incidents';
 import { Server } from 'socket.io';
 import http from 'http';
 
@@ -14,6 +16,8 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
 
+  app.use('/api/location', locationRouter);
+  app.use('/api/incidents', incidentsRouter);
   // We'll inject panic route later when socket is ready
   return app;
 }
