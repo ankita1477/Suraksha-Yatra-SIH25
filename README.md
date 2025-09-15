@@ -245,7 +245,150 @@ Suraksha-Yatra-SIH25/
   <p><em>Let's build this thing step by step! 🏗️</em></p>
 </div>
 
-### Phase 1: Core Setup (Week 1-2) 🏁 *"The Foundation Builders"*
+## ⚡ **6-Day MVP Sprint Plan** (Crunch Time Champions!)
+
+<div align="center">
+  <img src="https://media.giphy.com/media/26BRuo6sLetdllPAQ/giphy.gif" width="200"/>
+  <p><em>From zero to hero in 6 days! 🚀</em></p>
+</div>
+
+### 🏃‍♂️ **Day 1: Foundation & Setup** (Setup Squad Assemble!)
+**Team Focus**: All hands on deck for project foundation
+- **Morning (9-12 PM)**:
+  - [ ] **Ankita & Sahil**: Setup Express.js backend + PostgreSQL database
+  - [ ] **Juhi & Anchal**: Initialize React Native Expo project with navigation
+  - [ ] **Anwesha**: Setup basic Ethereum testnet environment
+  - [ ] **Saswat**: Prepare Python environment for AI services
+  
+- **Afternoon (1-6 PM)**:
+  - [ ] **All Team**: Basic authentication system (JWT)
+  - [ ] **Sahil**: Database schema design and setup
+  - [ ] **Juhi**: Basic mobile app screens (Login, Home, Profile)
+  - [ ] **Anchal**: Start React.js dashboard framework
+
+**🎯 End of Day Goal**: Working login system across all platforms
+
+### 📱 **Day 2: Core Mobile App** (Mobile Magic Day!)
+**Lead**: Juhi (Mobile) + Anchal (Frontend)
+- **Morning**:
+  - [ ] **Juhi**: Implement GPS tracking and maps integration
+  - [ ] **Juhi**: Add panic button functionality
+  - [ ] **Anchal**: Dashboard layout with maps
+  - [ ] **Sahil**: Location APIs and real-time endpoints
+  
+- **Afternoon**:
+  - [ ] **Juhi**: Basic geo-fencing implementation
+  - [ ] **Anchal**: Real-time alerts display on dashboard
+  - [ ] **Ankita**: Integration testing between mobile and backend
+
+**🎯 End of Day Goal**: Mobile app with GPS, panic button, and dashboard showing alerts
+
+### 🆔 **Day 3: Digital ID & Blockchain** (Identity Crisis Solved!)
+**Lead**: Anwesha (Blockchain) + Ankita (Integration)
+- **Morning**:
+  - [ ] **Anwesha**: Smart contract for Digital Tourist ID
+  - [ ] **Anwesha**: Deploy contract on Ethereum testnet
+  - [ ] **Sahil**: Blockchain integration APIs
+  - [ ] **Juhi**: User registration with blockchain ID generation
+  
+- **Afternoon**:
+  - [ ] **Ankita**: Connect mobile app to blockchain APIs
+  - [ ] **Anchal**: Display Digital ID on dashboard
+  - [ ] **All**: Testing blockchain ID creation flow
+
+**🎯 End of Day Goal**: Working blockchain-based Digital Tourist ID system
+
+### 🤖 **Day 4: AI/ML Intelligence** (Brain Power Activated!)
+**Lead**: Saswat (AI/ML) + Backend Integration
+- **Morning**:
+  - [ ] **Saswat**: Basic anomaly detection algorithms (inactivity, location loss)
+  - [ ] **Saswat**: Route deviation detection logic
+  - [ ] **Sahil**: AI service APIs and integration endpoints
+  - [ ] **Ankita**: Connect AI alerts to notification system
+  
+- **Afternoon**:
+  - [ ] **Saswat**: Real-time anomaly monitoring service
+  - [ ] **Anchal**: AI alerts display on dashboard
+  - [ ] **Juhi**: Anomaly notifications in mobile app
+
+**🎯 End of Day Goal**: AI system detecting and alerting on tourist anomalies
+
+### 🚨 **Day 5: Dashboard & Monitoring** (Mission Control Day!)
+**Lead**: Anchal (Dashboard) + All Team Integration
+- **Morning**:
+  - [ ] **Anchal**: Complete police/tourism dashboard
+  - [ ] **Anchal**: Real-time tourist tracking on maps
+  - [ ] **Sahil**: Incident management APIs
+  - [ ] **Ankita**: Dashboard-mobile real-time sync
+  
+- **Afternoon**:
+  - [ ] **Anchal**: Incident logging and management
+  - [ ] **All Team**: End-to-end testing of complete flow
+  - [ ] **Juhi**: Family location sharing feature
+  - [ ] **Saswat**: Fine-tune AI parameters
+
+**🎯 End of Day Goal**: Complete dashboard with real-time monitoring and incident management
+
+### 🚀 **Day 6: Polish & Demo Prep** (Showtime!)
+**Lead**: Ankita (Project Management) + All Team
+- **Morning**:
+  - [ ] **All**: Bug fixes and performance optimization
+  - [ ] **Anchal**: UI/UX polish and responsive design
+  - [ ] **Juhi**: Mobile app final testing and UI improvements
+  - [ ] **Sahil**: Security hardening and API optimization
+  
+- **Afternoon**:
+  - [ ] **All**: Demo preparation and presentation setup
+  - [ ] **Ankita**: Documentation and deployment guide
+  - [ ] **Saswat**: Demo scenarios for AI features
+  - [ ] **Anwesha**: Blockchain demo preparation
+  - [ ] **All**: Final integration testing and demo rehearsal
+
+**🎯 End of Day Goal**: Polished MVP ready for presentation!
+
+---
+
+## 📋 **Daily Sprint Structure**
+
+### ⏰ **Time Management**
+- **9:00-9:30 AM**: Daily standup (what did you do, what will you do, blockers)
+- **12:00-1:00 PM**: Lunch break + informal check-ins
+- **3:00-3:15 PM**: Quick sync and blocker resolution
+- **6:00-6:30 PM**: End of day demo and next day planning
+
+### 🔧 **Tools & Communication**
+- **GitHub**: Version control and task tracking
+- **Discord/Slack**: Real-time communication
+- **Shared Google Drive**: Documentation and resources
+- **Live Share (VS Code)**: Pair programming sessions
+
+### � **MVP Core Features (Must-Have)**
+1. ✅ Tourist registration with blockchain Digital ID
+2. ✅ Mobile app with GPS tracking and panic button
+3. ✅ Basic geo-fencing alerts
+4. ✅ AI anomaly detection (inactivity, location loss)
+5. ✅ Police/Tourism dashboard with real-time monitoring
+6. ✅ Basic incident management
+
+### 🚀 **Demo Day Prep Checklist**
+- [ ] **Working mobile app** on physical device
+- [ ] **Live dashboard** showing real-time data
+- [ ] **Blockchain Digital ID** creation demo
+- [ ] **AI anomaly detection** simulation
+- [ ] **Panic button to dashboard** alert flow
+- [ ] **Presentation slides** with architecture and features
+- [ ] **Demo script** with specific scenarios
+
+<div align="center">
+  <img src="https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif" width="200"/>
+  <p><em>6 days, 6 heroes, 1 amazing MVP! 🎉</em></p>
+</div>
+
+---
+
+## 📈 **Long-term Roadmap** (Post-MVP Enhancements)
+
+### Phase 1: Core Setup (Week 1-2)
 - [ ] Project structure setup 📁 *(Organizing like Marie Kondo)*
 - [ ] Basic React Native app with navigation 📱 *(Baby steps!)*
 - [ ] Express.js backend with PostgreSQL 🗄️ *(Building the backbone)*
