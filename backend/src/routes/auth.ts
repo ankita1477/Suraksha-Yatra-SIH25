@@ -62,3 +62,18 @@ authRouter.post('/refresh', async (req, res) => {
     res.status(401).json({ error: 'Invalid refresh' });
   }
 });
+
+// Simple profile endpoint for dashboard to validate token
+authRouter.get('/me', async (req, res) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing token' });
+  try {
+    const { verifyToken } = await import('../services/jwt');
+    const decoded = verifyToken(header.substring(7));
+    const userDoc = await UserModel.findById(decoded.sub);
+    if (!userDoc) return res.status(404).json({ error: 'User not found' });
+    res.json({ id: userDoc.id, email: userDoc.email, role: userDoc.role, did: userDoc.did });
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});

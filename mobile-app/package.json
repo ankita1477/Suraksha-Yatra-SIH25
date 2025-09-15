@@ -22,7 +22,9 @@
     "axios": "^1.7.7",
     "socket.io-client": "^4.7.5",
     "zustand": "^5.0.0",
-    "expo-secure-store": "~13.0.2"
+    "expo-secure-store": "~13.0.2",
+    "react-dom": "19.1.0",
+    "react-native-web": "^0.21.0"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

@@ -7,7 +7,7 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const { login, loading } = useAuthStore();
+  const { login, register, loading, mode, toggleMode } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -15,8 +15,13 @@ export default function LoginScreen({ navigation }: Props) {
   const onSubmit = async () => {
     setError(null);
     try {
-      await login(email, password);
-      navigation.replace('Home');
+      if (mode === 'login') {
+        await login(email, password);
+        navigation.replace('Home');
+      } else {
+        await register(email, password);
+        setError('Registered! Please login now.');
+      }
     } catch (e: any) {
       setError(e.message || 'Login failed');
     }
@@ -29,9 +34,12 @@ export default function LoginScreen({ navigation }: Props) {
       <TextInput placeholder="Password" style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
       {error && <Text style={styles.error}>{error}</Text>}
       <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{mode === 'login' ? 'Login' : 'Register'}</Text>}
       </TouchableOpacity>
-      <Text style={styles.subtitle}>MVP Demo Login (no signup flow yet)</Text>
+      <TouchableOpacity onPress={toggleMode} style={{ marginTop: 12 }}>
+        <Text style={{ color: '#58a6ff', textAlign: 'center' }}>{mode === 'login' ? 'Need an account? Register' : 'Have an account? Login'}</Text>
+      </TouchableOpacity>
+      <Text style={styles.subtitle}>{mode === 'login' ? 'Enter credentials to continue' : 'Create your account'}</Text>
     </View>
   );
 }

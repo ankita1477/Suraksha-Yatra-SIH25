@@ -91,15 +91,18 @@ sequenceDiagram
 - ✅ MongoDB integration (Mongoose)
 - ✅ Auth: register/login + bcrypt hashing
 - ✅ JWT access + refresh tokens (rotation & blacklist via revoke)
+- ✅ DID generation on register (hash-based stub)
 - ✅ Panic alerts persistence
+- ✅ Incident model + creation (panic + geofence/anomaly)
+- ✅ Location updates endpoint (`/api/location`)
 - ✅ Geospatial index + nearby query
 - ✅ Acknowledge endpoint (role restricted)
-- ✅ Role middleware (requireRole)
+- ✅ Role middleware (requireRole) (inline fallback in panic route – unify later)
 - ✅ Basic OpenAPI generator script (swagger stub)
 - 🟡 Serve OpenAPI JSON via route
-- ⏳ Incident listing / filtering / pagination
-- ⏳ Blockchain Digital ID module (currently placeholder path only)
-- ⏳ Anomaly rule engine integration
+- 🟡 Incident listing (basic) / pagination + advanced filtering pending
+- 🟡 Basic anomaly/geofence heuristics (speed, accuracy, high‑risk zone) – rules engine pending
+- 🟡 Blockchain DID module (on-chain integration later)
 
 ### Dashboard (NOT STARTED)
 - ⏳ Vite + React scaffold
@@ -110,14 +113,15 @@ sequenceDiagram
 - ⏳ Incident log view & filters
 
 ### AI / Rule Engine
+- ✅ Basic heuristics (speed > threshold, low GPS accuracy, high‑risk geofence)
 - ⏳ Define rule set (inactivity, speed drop, geo-fence exit)
 - ⏳ Service endpoint `/api/anomaly/eval` (or internal module)
-- 🔜 Hook into location updates pipeline
+- 🔜 Hook into location updates pipeline (convert heuristics into pluggable rules)
 
 ### Blockchain Module
-- ⏳ DID generation stub (UUID + hash now → later smart contract)
+- ✅ DID generation stub (hash) integrated in registration
 - 🔜 Replace stub with on-chain call (testnet)
-- 🔜 Digital ID verification endpoint
+- ⏳ Digital ID verification endpoint
 
 ### Security & Ops
 - ✅ Helmet & rate limiting
@@ -148,9 +152,11 @@ sequenceDiagram
 - [ ] Serve generated OpenAPI file via Express route
 - [ ] Add `/api/alerts/:id` GET (single alert)
 - [ ] Add pagination to `/api/panic-alerts` (cursor or page)
-- [ ] Implement anomaly rules engine skeleton
-- [ ] Add DID stub: POST `/api/did/create` (stores hash in user)
+- [ ] Implement anomaly rules engine skeleton (replace inline heuristics)
+- [ ] DID explicit endpoint (optional) `POST /api/did/create` (currently auto on register)
 - [ ] Expose user role update route (admin only)
+- [ ] Unify role guard (remove inline duplicate in panic route)
+- [ ] Incident query: pagination + filtering by type/severity/user
 
 ### Dashboard
 - [ ] Create Vite React app under `dashboard/`
@@ -173,11 +179,11 @@ sequenceDiagram
 - [ ] Implement inactivity rule
 - [ ] Implement geo-fence exit rule
 - [ ] REST endpoint to test rule evaluation manually
-- [ ] Emit anomaly as synthetic panic (flagged type)
+- [ ] Emit anomaly as synthetic panic (flagged type) (currently separate incident only)
 
 ### Blockchain Stub
-- [ ] Add DID field to user model
-- [ ] DID generator util (hash of userId + timestamp)
+- [x] Add DID field to user model
+- [x] DID generator util (hash of email + timestamp)
 - [ ] Endpoint to retrieve DID & verification signature (placeholder)
 
 ### DevOps / Quality
@@ -205,4 +211,4 @@ sequenceDiagram
 - DID integration can stay a stub for MVP demo: emphasize pluggable architecture.
 
 ---
-Last updated: (update date when editing) 
+Last updated: 2025-09-15

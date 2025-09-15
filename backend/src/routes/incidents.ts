@@ -8,7 +8,10 @@ export const incidentsRouter = Router();
 incidentsRouter.get('/', authMiddleware, async (req: AuthRequest, res) => {
   const filter: any = {};
   if (req.query.status) filter.status = req.query.status;
-  const incidents = await IncidentModel.find(filter).sort({ createdAt: -1 }).limit(200);
+  if (req.query.severity) filter.severity = req.query.severity;
+  if (req.query.type) filter.type = req.query.type;
+  const limit = Math.min(Number(req.query.limit) || 200, 500);
+  const incidents = await IncidentModel.find(filter).sort({ createdAt: -1 }).limit(limit);
   res.json(incidents);
 });
 

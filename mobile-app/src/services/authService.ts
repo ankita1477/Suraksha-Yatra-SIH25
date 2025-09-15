@@ -1,13 +1,14 @@
 import { api } from './api';
 
-export interface LoginResponse {
-  token: string;
-  user: { id: string; email: string };
+export interface AuthUser { id: string; email: string; role?: string; did?: string }
+export interface AuthResponse { token: string; refreshToken: string; user: AuthUser }
+
+export async function loginRequest(email: string, password: string): Promise<AuthResponse> {
+  const res = await api.post('/auth/login', { email, password });
+  return res.data;
 }
 
-export async function loginRequest(email: string, password: string): Promise<LoginResponse> {
-  // Mocked for MVP – replace with real endpoint
-  await new Promise(r => setTimeout(r, 800));
-  if (!email || !password) throw new Error('Email & password required');
-  return { token: 'mock-token', user: { id: 'u1', email } };
+export async function registerRequest(email: string, password: string): Promise<AuthResponse> {
+  const res = await api.post('/auth/register', { email, password });
+  return res.data;
 }
