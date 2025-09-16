@@ -4,6 +4,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import useAuthStore from '../../state/authStore';
 import socketService from '../../services/socketService';
+import { 
+  startLocationTracking, 
+  stopLocationTracking, 
+  isLocationTrackingActive,
+  getLocationStatus 
+} from '../../services/locationService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -11,12 +17,20 @@ export default function HomeScreen({ navigation }: Props) {
   const { user, logout } = useAuthStore();
   const [socketConnected, setSocketConnected] = useState(false);
   const [recentAlerts, setRecentAlerts] = useState<number>(0);
+  const [locationStatus, setLocationStatus] = useState({
+    hasPermission: false,
+    isTracking: false,
+    backgroundEnabled: false
+  });
 
   useEffect(() => {
     // Initialize socket connection
     socketService.connect().then(() => {
       setSocketConnected(socketService.isConnected());
     });
+
+    // Initialize location tracking
+    initializeLocationTracking();
 
     // Listen for real-time alerts
     const handlePanicAlert = (data: any) => {
@@ -45,14 +59,67 @@ export default function HomeScreen({ navigation }: Props) {
     // Check connection status periodically
     const connectionInterval = setInterval(() => {
       setSocketConnected(socketService.isConnected());
+      updateLocationStatus();
     }, 5000);
 
     return () => {
       socketService.off('panic_alert', handlePanicAlert);
       socketService.off('incident', handleIncident);
       clearInterval(connectionInterval);
+      // Clean up location tracking on unmount
+      stopLocationTracking();
     };
   }, [navigation]);
+
+  const initializeLocationTracking = async () => {
+    try {
+      const success = await startLocationTracking(
+        (location, response) => {
+          console.log('Location updated:', location.coords);
+          if (response.anomaly) {
+            setRecentAlerts(prev => prev + 1);
+          }
+        },
+        {
+          timeInterval: 30000, // 30 seconds
+          distanceInterval: 100, // 100 meters
+        }
+      );
+      
+      if (success) {
+        console.log('Location tracking started successfully');
+      }
+    } catch (error) {
+      console.error('Failed to start location tracking:', error);
+    }
+    
+    // Update initial status
+    updateLocationStatus();
+  };
+
+  const updateLocationStatus = async () => {
+    try {
+      const status = await getLocationStatus();
+      setLocationStatus(status);
+    } catch (error) {
+      console.error('Failed to get location status:', error);
+    }
+  };
+
+  const toggleLocationTracking = async () => {
+    if (locationStatus.isTracking) {
+      await stopLocationTracking();
+      Alert.alert('Location Tracking', 'Location tracking has been stopped.');
+    } else {
+      const success = await startLocationTracking();
+      if (success) {
+        Alert.alert('Location Tracking', 'Location tracking has been started.');
+      } else {
+        Alert.alert('Error', 'Failed to start location tracking. Please check permissions.');
+      }
+    }
+    updateLocationStatus();
+  };
 
   const handleEmergencyTest = () => {
     Alert.alert(
@@ -73,6 +140,9 @@ export default function HomeScreen({ navigation }: Props) {
       <View style={styles.statusContainer}>
         <Text style={styles.statusText}>
           📡 Status: {socketConnected ? '🟢 Protected' : '🔴 Offline'}
+        </Text>
+        <Text style={styles.statusText}>
+          📍 Location: {locationStatus.isTracking ? '🟢 Tracking' : '🔴 Not Tracking'}
         </Text>
         {recentAlerts > 0 && (
           <Text style={styles.alertsText}>
@@ -96,15 +166,35 @@ export default function HomeScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.row}>
+        <TouchableOpacity 
+          style={[styles.card, locationStatus.isTracking ? styles.trackingActiveCard : styles.trackingInactiveCard]} 
+          onPress={toggleLocationTracking}
+        >
+          <Text style={styles.cardEmoji}>{locationStatus.isTracking ? '📍' : '📍'}</Text>
+          <Text style={styles.cardText}>
+            {locationStatus.isTracking ? 'Stop Tracking' : 'Start Tracking'}
+          </Text>
+          <Text style={styles.cardSubtext}>
+            {locationStatus.isTracking ? 'Location active' : 'Enable tracking'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EmergencyContacts')}>
+          <Text style={styles.cardEmoji}>�</Text>
+          <Text style={styles.cardText}>Emergency Contacts</Text>
+          <Text style={styles.cardSubtext}>Manage contacts</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.row}>
         <TouchableOpacity style={styles.card} onPress={handleEmergencyTest}>
           <Text style={styles.cardEmoji}>🧪</Text>
           <Text style={styles.cardText}>Test Alert</Text>
           <Text style={styles.cardSubtext}>Test emergency</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.card} onPress={() => setRecentAlerts(0)}>
-          <Text style={styles.cardEmoji}>🔔</Text>
-          <Text style={styles.cardText}>Clear Alerts</Text>
-          <Text style={styles.cardSubtext}>Reset counter</Text>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NotificationSettings')}>
+          <Text style={styles.cardEmoji}>�</Text>
+          <Text style={styles.cardText}>Notification Settings</Text>
+          <Text style={styles.cardSubtext}>Configure alerts</Text>
         </TouchableOpacity>
       </View>
 
@@ -153,6 +243,14 @@ const styles = StyleSheet.create({
   panicCard: {
     backgroundColor: '#dc2626',
     borderColor: '#ef4444',
+  },
+  trackingActiveCard: {
+    backgroundColor: '#16a34a',
+    borderColor: '#22c55e',
+  },
+  trackingInactiveCard: {
+    backgroundColor: '#737373',
+    borderColor: '#a3a3a3',
   },
   cardEmoji: {
     fontSize: 24,

@@ -1,10 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import { getItem, setItem } from '../utils/secureStore';
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { config, log } from '../config/env';
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: config.apiBaseUrl,
   timeout: 15000,
 });
 
@@ -23,7 +22,7 @@ async function refreshToken(): Promise<string | null> {
   const refreshToken = await getItem('refreshToken');
       if (!refreshToken) return null;
       try {
-        const res = await axios.post(BASE_URL + '/auth/refresh', { refreshToken });
+        const res = await axios.post(config.apiBaseUrl + '/auth/refresh', { refreshToken });
         const { token, refreshToken: newRefresh } = res.data;
   if (token) await setItem('token', token);
   if (newRefresh) await setItem('refreshToken', newRefresh);

@@ -12,6 +12,7 @@ import {
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPanicAlert as sendPanicAlertAPI } from '../../services/alertsService';
+import { sendEmergencyNotification } from '../../services/notificationService';
 
 interface PanicScreenProps {
   navigation: {
@@ -72,6 +73,12 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
       };
 
       await sendPanicAlertAPI(panicPayload);
+
+      // Send local notification
+      await sendEmergencyNotification('panic', {
+        latitude: location?.coords.latitude || 0,
+        longitude: location?.coords.longitude || 0,
+      });
 
       Alert.alert(
         'Alert Sent',

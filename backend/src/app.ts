@@ -5,6 +5,8 @@ import { authRouter } from './routes/auth';
 import { createPanicRouter, createPanicQueryRouter } from './routes/panic';
 import { locationRouter } from './routes/location';
 import { incidentsRouter } from './routes/incidents';
+import { emergencyContactsRouter } from './routes/emergencyContacts';
+import { userRouter } from './routes/user';
 import { Server } from 'socket.io';
 import http from 'http';
 
@@ -15,6 +17,8 @@ export function createApp() {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/user', userRouter);
+  app.use('/api/emergency-contacts', emergencyContactsRouter);
 
   app.use('/api/location', locationRouter);
   app.use('/api/incidents', incidentsRouter);

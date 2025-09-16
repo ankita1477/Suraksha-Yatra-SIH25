@@ -27,6 +27,24 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
@@ -39,4 +57,47 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Leaflet map fixes */
+.leaflet-container {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-radius: 8px;
+}
+
+.leaflet-tile {
+  border-radius: 0;
+}
+
+.leaflet-control-container {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #e2e8f0 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+}
+
+/* Prevent map blinking */
+.leaflet-map-pane {
+  z-index: 1;
+}
+
+.leaflet-tile-pane {
+  z-index: 1;
+}
+
+.leaflet-marker-pane {
+  z-index: 3;
+}
+
+.leaflet-popup-pane {
+  z-index: 4;
 }

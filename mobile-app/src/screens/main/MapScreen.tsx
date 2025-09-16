@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert, TouchableOpacity } from 'react-native';
 // On web, react-native-maps can break for this version; guard usage.
 let MapView: any = null;
 let Marker: any = null;
@@ -10,24 +10,59 @@ if (Platform.OS !== 'web') {
 }
 import * as Location from 'expo-location';
 import { sendLocationUpdate } from '../../services/locationService';
-import { fetchNearbyAlerts } from '../../services/alertsService';
+import { 
+  fetchNearbyAlerts, 
+  fetchAllIncidents, 
+  fetchRecentPanicAlerts,
+  IncidentData 
+} from '../../services/alertsService';
 import socketService from '../../services/socketService';
 
-interface Incident {
+interface PanicAlert {
   _id: string;
-  type: string;
-  severity: string;
-  description?: string;
-  location: {
-    coordinates: [number, number];
-  };
+  userId: string;
+  lat: number;
+  lng: number;
+  timestamp: string;
+  acknowledged: boolean;
+  message?: string;
 }
 
 export default function MapScreen() {
   const [region, setRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null>(null);
   const [status, setStatus] = useState<string>('');
-  const [nearbyIncidents, setNearbyIncidents] = useState<Incident[]>([]);
+  const [incidents, setIncidents] = useState<IncidentData[]>([]);
+  const [panicAlerts, setPanicAlerts] = useState<PanicAlert[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadIncidentData = async (latitude: number, longitude: number) => {
+    setRefreshing(true);
+    try {
+      // Fetch nearby panic alerts
+      const nearbyAlerts = await fetchNearbyAlerts(latitude, longitude, 5000);
+      setPanicAlerts(nearbyAlerts || []);
+
+      // Fetch all incidents
+      const allIncidents = await fetchAllIncidents(50);
+      setIncidents(allIncidents || []);
+
+      // Fetch recent panic alerts
+      const recentAlerts = await fetchRecentPanicAlerts(20);
+      console.log(`Loaded ${allIncidents.length} incidents and ${recentAlerts.length} alerts`);
+    } catch (error) {
+      console.error('Failed to load incident data:', error);
+      Alert.alert('Error', 'Failed to load incident data. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const refreshData = async () => {
+    if (region) {
+      await loadIncidentData(region.latitude, region.longitude);
+    }
+  };
 
   useEffect(() => {
     let interval: any;
@@ -48,13 +83,8 @@ export default function MapScreen() {
       };
       setRegion(newRegion);
 
-      // Fetch nearby incidents
-      try {
-        const incidents = await fetchNearbyAlerts(loc.coords.latitude, loc.coords.longitude, 2000);
-        setNearbyIncidents(incidents || []);
-      } catch (error) {
-        console.error('Failed to fetch nearby incidents:', error);
-      }
+      // Load all incident data
+      await loadIncidentData(loc.coords.latitude, loc.coords.longitude);
 
       // Start periodic location updates
       interval = setInterval(async () => {
@@ -98,7 +128,7 @@ export default function MapScreen() {
     });
 
     // Listen for real-time incidents
-    const handleNewIncident = (incident: Incident) => {
+    const handleNewIncident = (incident: IncidentData) => {
       if (region) {
         const distance = calculateDistance(
           region.latitude,
@@ -107,9 +137,9 @@ export default function MapScreen() {
           incident.location.coordinates[0]
         );
         
-        // Show incidents within 2km
-        if (distance < 2000) {
-          setNearbyIncidents(prev => [...prev, incident]);
+        // Show incidents within 5km
+        if (distance < 5000) {
+          setIncidents(prev => [...prev, incident]);
           Alert.alert(
             '🚨 Safety Alert',
             `New ${incident.type} incident nearby: ${incident.description || 'Unknown incident'}`,
@@ -119,11 +149,34 @@ export default function MapScreen() {
       }
     };
 
+    const handleNewPanicAlert = (alert: any) => {
+      if (region) {
+        const distance = calculateDistance(
+          region.latitude,
+          region.longitude,
+          alert.lat,
+          alert.lng
+        );
+        
+        // Show alerts within 5km
+        if (distance < 5000) {
+          setPanicAlerts(prev => [...prev, alert]);
+          Alert.alert(
+            '🆘 Panic Alert',
+            'A panic alert was triggered nearby! Please stay alert.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    };
+
     socketService.on('incident', handleNewIncident);
+    socketService.on('panic_alert', handleNewPanicAlert);
 
     return () => {
       if (interval) clearInterval(interval);
       socketService.off('incident', handleNewIncident);
+      socketService.off('panic_alert', handleNewPanicAlert);
     };
   }, []);
 
@@ -161,7 +214,7 @@ export default function MapScreen() {
           Socket: {socketConnected ? '🟢 Connected' : '🔴 Disconnected'}
         </Text>
         <Text style={styles.webText}>
-          Nearby Incidents: {nearbyIncidents.length}
+          Incidents: {incidents.length} | Alerts: {panicAlerts.length}
         </Text>
       </View>
     );
@@ -181,17 +234,31 @@ export default function MapScreen() {
             />
           )}
           
-          {/* Nearby incident markers */}
-          {Marker && nearbyIncidents.map((incident) => (
+          {/* Incident markers */}
+          {Marker && incidents.map((incident) => (
             <Marker
               key={incident._id}
               coordinate={{
                 latitude: incident.location.coordinates[1],
                 longitude: incident.location.coordinates[0],
               }}
-              title={`${incident.type.toUpperCase()} Alert`}
+              title={`${incident.type.toUpperCase()} Incident`}
               description={incident.description || `${incident.severity} severity incident`}
               pinColor={getMarkerColor(incident.severity)}
+            />
+          ))}
+
+          {/* Panic alert markers */}
+          {Marker && panicAlerts.map((alert) => (
+            <Marker
+              key={alert._id}
+              coordinate={{
+                latitude: alert.lat,
+                longitude: alert.lng,
+              }}
+              title="🆘 PANIC ALERT"
+              description={alert.message || `Emergency alert - ${alert.acknowledged ? 'Acknowledged' : 'Awaiting response'}`}
+              pinColor={alert.acknowledged ? "#22c55e" : "#dc2626"}
             />
           ))}
         </MapView>
@@ -208,9 +275,20 @@ export default function MapScreen() {
       <View style={styles.connectionBar}>
         <Text style={styles.connectionText}>
           📡 {socketConnected ? 'Connected' : 'Disconnected'} | 
-          🚨 {nearbyIncidents.length} nearby alerts
+          🚨 {incidents.length} incidents | ⚠️ {panicAlerts.length} alerts
         </Text>
       </View>
+
+      {/* Refresh button */}
+      <TouchableOpacity 
+        style={styles.refreshButton} 
+        onPress={refreshData}
+        disabled={refreshing}
+      >
+        <Text style={styles.refreshText}>
+          {refreshing ? '🔄' : '↻'} Refresh
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -252,6 +330,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     textAlign: 'center',
+  },
+  refreshButton: {
+    position: 'absolute',
+    top: 100,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 10,
+    borderRadius: 20,
+  },
+  refreshText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   webFallback: { 
     flex: 1, 

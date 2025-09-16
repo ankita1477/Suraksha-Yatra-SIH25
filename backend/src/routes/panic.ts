@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { EmergencyContactModel } from '../models/EmergencyContact';
+import NotificationService from '../services/notificationService';
 // Local minimal role guard to avoid import resolution issue
 function requireRole(...roles: string[]) {
   return (req: any, res: any, next: any) => {
@@ -64,6 +66,34 @@ export function createPanicRouter(io: Server) {
       
       // Emit real-time alert
       io.emit('panic_alert', payload);
+      
+      // Notify emergency contacts
+      const emergencyContacts = await EmergencyContactModel.find({ 
+        userId: req.user!.id, 
+        isActive: true 
+      });
+      
+      if (emergencyContacts.length > 0) {
+        // Here you would integrate with SMS/Email service
+        console.log(`Panic alert sent to ${emergencyContacts.length} emergency contacts:`, 
+          emergencyContacts.map(c => ({ name: c.name, phone: c.phone })));
+        
+        // You could also emit a specific event for emergency contacts
+        io.emit('emergency_alert', {
+          userId: req.user!.id,
+          location: { lat: payload.lat, lng: payload.lng },
+          message: message || 'Emergency panic alert triggered',
+          contactsNotified: emergencyContacts.length,
+          timestamp: payload.timestamp
+        });
+      }
+
+      // Send push notification to user
+      await NotificationService.sendEmergencyAlert(
+        req.user!.id, 
+        'panic', 
+        { lat: payload.lat, lng: payload.lng }
+      );
       
       // Create incident record
       const incident = await IncidentModel.create({
