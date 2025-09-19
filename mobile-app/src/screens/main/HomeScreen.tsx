@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import useAuthStore from '../../state/authStore';
@@ -10,6 +10,7 @@ import {
   isLocationTrackingActive,
   getLocationStatus 
 } from '../../services/locationService';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -134,147 +135,208 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Welcome {user?.email?.split('@')[0] || 'Traveler'} 👋</Text>
-      
-      {/* Connection Status */}
-      <View style={styles.statusContainer}>
-        <Text style={styles.statusText}>
-          📡 Status: {socketConnected ? '🟢 Protected' : '🔴 Offline'}
-        </Text>
-        <Text style={styles.statusText}>
-          📍 Location: {locationStatus.isTracking ? '🟢 Tracking' : '🔴 Not Tracking'}
-        </Text>
-        {recentAlerts > 0 && (
-          <Text style={styles.alertsText}>
-            🚨 {recentAlerts} recent alert{recentAlerts > 1 ? 's' : ''} in your area
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.userName}>{user?.email?.split('@')[0] || 'Traveler'}</Text>
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.headerIconBtn}
+          onPress={() => navigation.navigate('NotificationSettings')}
+        >
+          <Ionicons name="notifications" size={22} color="#e5e7eb" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Status Chips */}
+      <View style={styles.chipsRow}>
+        <View style={[styles.chip, socketConnected ? styles.chipOk : styles.chipWarn]}>
+          <Ionicons name="shield-checkmark" size={14} color={socketConnected ? '#10b981' : '#f43f5e'} />
+          <Text style={[styles.chipText, { color: socketConnected ? '#10b981' : '#f43f5e' }]}>
+            {socketConnected ? 'Protected' : 'Offline'}
           </Text>
+        </View>
+        <View style={[styles.chip, locationStatus.isTracking ? styles.chipOk : styles.chipWarn]}>
+          <Ionicons name="location" size={14} color={locationStatus.isTracking ? '#10b981' : '#f43f5e'} />
+          <Text style={[styles.chipText, { color: locationStatus.isTracking ? '#10b981' : '#f43f5e' }]}>
+            {locationStatus.isTracking ? 'Tracking On' : 'Tracking Off'}
+          </Text>
+        </View>
+        {recentAlerts > 0 && (
+          <View style={[styles.chip, styles.chipAlert]}>
+            <Ionicons name="alert" size={14} color="#f59e0b" />
+            <Text style={[styles.chipText, { color: '#f59e0b' }]}>{recentAlerts} alerts</Text>
+          </View>
         )}
       </View>
 
-      <Text style={styles.text}>Quick Actions</Text>
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Map')}>
-          <Text style={styles.cardEmoji}>🗺️</Text>
-          <Text style={styles.cardText}>Live Map</Text>
-          <Text style={styles.cardSubtext}>View safety zones</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.card, styles.panicCard]} onPress={() => navigation.navigate('Panic')}>
-          <Text style={styles.cardEmoji}>🆘</Text>
-          <Text style={styles.cardText}>Panic Button</Text>
-          <Text style={styles.cardSubtext}>Emergency alert</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Content */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        {/* Hero SOS */}
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>Need help?</Text>
+          <Text style={styles.heroSubtitle}>Tap SOS to alert authorities with your location</Text>
+          <TouchableOpacity
+            style={styles.sosButton}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Panic')}
+          >
+            <Ionicons name="alert-circle" size={42} color="#fff" />
+            <Text style={styles.sosText}>SOS</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.row}>
-        <TouchableOpacity 
-          style={[styles.card, locationStatus.isTracking ? styles.trackingActiveCard : styles.trackingInactiveCard]} 
-          onPress={toggleLocationTracking}
-        >
-          <Text style={styles.cardEmoji}>{locationStatus.isTracking ? '📍' : '📍'}</Text>
-          <Text style={styles.cardText}>
-            {locationStatus.isTracking ? 'Stop Tracking' : 'Start Tracking'}
-          </Text>
-          <Text style={styles.cardSubtext}>
-            {locationStatus.isTracking ? 'Location active' : 'Enable tracking'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EmergencyContacts')}>
-          <Text style={styles.cardEmoji}>�</Text>
-          <Text style={styles.cardText}>Emergency Contacts</Text>
-          <Text style={styles.cardSubtext}>Manage contacts</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Quick Actions Grid */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.grid}>
+          <TouchableOpacity style={styles.tile} onPress={() => navigation.navigate('Map')}>
+            <View style={[styles.tileIconWrap, { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.35)' }]}>
+              <Ionicons name="map" size={22} color="#60a5fa" />
+            </View>
+            <Text style={styles.tileTitle}>Live Map</Text>
+            <Text style={styles.tileSubtitle}>View incidents nearby</Text>
+          </TouchableOpacity>
 
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.card} onPress={handleEmergencyTest}>
-          <Text style={styles.cardEmoji}>🧪</Text>
-          <Text style={styles.cardText}>Test Alert</Text>
-          <Text style={styles.cardSubtext}>Test emergency</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NotificationSettings')}>
-          <Text style={styles.cardEmoji}>�</Text>
-          <Text style={styles.cardText}>Notification Settings</Text>
-          <Text style={styles.cardSubtext}>Configure alerts</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity 
+            style={styles.tile}
+            onPress={toggleLocationTracking}
+          >
+            <View style={[styles.tileIconWrap, { backgroundColor: 'rgba(16,185,129,0.15)', borderColor: 'rgba(16,185,129,0.35)' }]}>
+              <Ionicons name={locationStatus.isTracking ? 'pause-circle' : 'play-circle'} size={22} color="#34d399" />
+            </View>
+            <Text style={styles.tileTitle}>{locationStatus.isTracking ? 'Stop Tracking' : 'Start Tracking'}</Text>
+            <Text style={styles.tileSubtitle}>{locationStatus.isTracking ? 'Location active' : 'Enable tracking'}</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity onPress={logout} style={styles.logout}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.tile} onPress={() => navigation.navigate('EmergencyContacts')}>
+            <View style={[styles.tileIconWrap, { backgroundColor: 'rgba(251,113,133,0.15)', borderColor: 'rgba(251,113,133,0.35)' }]}>
+              <Ionicons name="people" size={22} color="#fb7185" />
+            </View>
+            <Text style={styles.tileTitle}>Emergency Contacts</Text>
+            <Text style={styles.tileSubtitle}>Manage contacts</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.tile} onPress={handleEmergencyTest}>
+            <View style={[styles.tileIconWrap, { backgroundColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.35)' }]}>
+              <Ionicons name="flask" size={22} color="#f59e0b" />
+            </View>
+            <Text style={styles.tileTitle}>Test Alert</Text>
+            <Text style={styles.tileSubtitle}>Send test notification</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Logout */}
+        <TouchableOpacity onPress={logout} style={styles.logout}>
+          <Ionicons name="log-out" size={18} color="#ef4444" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#0d1117' },
-  heading: { fontSize: 22, fontWeight: '600', color: '#fff', marginBottom: 16 },
-  statusContainer: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  alertsText: {
-    color: '#fbbf24',
-    fontSize: 12,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  text: { color: '#aaa', marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  card: { 
-    flex: 1, 
-    backgroundColor: '#1e2a33', 
-    padding: 16, 
-    borderRadius: 12, 
+  container: { flex: 1, padding: 18, backgroundColor: '#0b1220' },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  greeting: { color: '#9aa4b2', fontSize: 14 },
+  userName: { color: '#e5e7eb', fontSize: 20, fontWeight: '700' },
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(148, 163, 184, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
-  panicCard: {
-    backgroundColor: '#dc2626',
-    borderColor: '#ef4444',
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
   },
-  trackingActiveCard: {
-    backgroundColor: '#16a34a',
-    borderColor: '#22c55e',
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(30, 41, 59, 0.55)',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(71, 85, 105, 0.35)'
   },
-  trackingInactiveCard: {
-    backgroundColor: '#737373',
-    borderColor: '#a3a3a3',
+  chipOk: { backgroundColor: 'rgba(6, 78, 59, 0.15)', borderColor: 'rgba(16, 185, 129, 0.35)' },
+  chipWarn: { backgroundColor: 'rgba(69, 10, 10, 0.15)', borderColor: 'rgba(239, 68, 68, 0.35)' },
+  chipAlert: { backgroundColor: 'rgba(120, 53, 15, 0.15)', borderColor: 'rgba(245, 158, 11, 0.35)' },
+  chipText: { fontSize: 12, fontWeight: '600' },
+  heroCard: {
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(71, 85, 105, 0.35)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
-  cardEmoji: {
-    fontSize: 24,
-    marginBottom: 8,
+  heroTitle: { color: '#e5e7eb', fontSize: 18, fontWeight: '700' },
+  heroSubtitle: { color: '#9aa4b2', fontSize: 13, marginTop: 6 },
+  sosButton: {
+    alignSelf: 'center',
+    marginTop: 14,
+    backgroundColor: '#ef4444',
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 26,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#ef4444',
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 6,
   },
-  cardText: { 
-    color: '#fff', 
-    fontWeight: '600', 
-    fontSize: 14,
-    marginBottom: 4,
+  sosText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+  sectionTitle: { color: '#9aa4b2', fontSize: 13, marginBottom: 10, marginTop: 6 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile: {
+    width: '48%',
+    backgroundColor: 'rgba(17, 24, 39, 0.7)',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(71, 85, 105, 0.35)'
   },
-  cardSubtext: {
-    color: '#aaa',
-    fontSize: 11,
-    textAlign: 'center',
+  tileIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    marginBottom: 12,
   },
+  tileTitle: { color: '#e5e7eb', fontWeight: '700' },
+  tileSubtitle: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
   logout: { 
-    marginTop: 'auto', 
+    marginTop: 18,
     padding: 12, 
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 8,
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    flexDirection: 'row'
   },
-  logoutText: { color: '#ff4d4f', fontWeight: '500' }
+  logoutText: { color: '#ef4444', fontWeight: '700' }
 });
