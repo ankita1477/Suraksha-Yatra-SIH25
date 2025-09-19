@@ -6,6 +6,45 @@ import { evaluateGeofences } from '../config/geofence';
 
 export const locationRouter = Router();
 
+// Get active user locations (for dashboard)
+locationRouter.get('/active', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    // Get locations from the last 5 minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    const activeLocations = await UserLocationModel.find({
+      createdAt: { $gte: fiveMinutesAgo }
+    })
+    .populate('userId', 'email name')
+    .sort({ createdAt: -1 })
+    .limit(100); // Limit to 100 most recent
+
+    // Group by userId to get the most recent location per user
+    const locationMap = new Map();
+    activeLocations.forEach(loc => {
+      const userId = loc.userId.toString();
+      if (!locationMap.has(userId)) {
+        locationMap.set(userId, {
+          _id: loc._id,
+          userId: userId,
+          location: loc.location,
+          speed: loc.speed,
+          accuracy: loc.accuracy,
+          timestamp: loc.createdAt,
+          user: loc.userId
+        });
+      }
+    });
+
+    const uniqueLocations = Array.from(locationMap.values());
+    
+    res.json(uniqueLocations);
+  } catch (error) {
+    console.error('Error fetching active locations:', error);
+    res.status(500).json({ error: 'Failed to fetch active locations' });
+  }
+});
+
 locationRouter.post('/', authMiddleware, async (req: AuthRequest, res) => {
   const { latitude, longitude, speed, accuracy } = req.body;
   if (typeof latitude !== 'number' || typeof longitude !== 'number') {
