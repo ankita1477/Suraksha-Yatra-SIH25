@@ -23,7 +23,7 @@ authRouter.post('/register', async (req, res) => {
   if (!parse.success) return res.status(400).json({ error: 'Invalid input', issues: parse.error.issues });
   const { email, password } = parse.data;
   const existing = await UserModel.findOne({ email });
-  if (existing) return res.status(409).json({ error: 'User exists' });
+  if (existing) return res.status(409).json({ error: 'Email already registered' });
   const passwordHash = await bcrypt.hash(password, 10);
   const did = generateDID(email);
   const created = await UserModel.create({ email, passwordHash, did });

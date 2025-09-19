@@ -6,13 +6,16 @@ import {
   TouchableOpacity,
   Alert,
   Vibration,
-  SafeAreaView,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPanicAlert as sendPanicAlertAPI } from '../../services/alertsService';
 import { sendEmergencyNotification } from '../../services/notificationService';
+import SafeAreaWrapper from '../../components/SafeAreaWrapper';
+import { colors, typography, spacing, commonStyles, borderRadius, shadows } from '../../utils/theme';
+import { wp, hp, isSmallDevice, TOUCH_TARGET_SIZE } from '../../utils/responsive';
 
 interface PanicScreenProps {
   navigation: {
@@ -111,194 +114,195 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Emergency Alert</Text>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.infoContainer}>
-          <Ionicons name="warning" size={48} color="#FF6B6B" />
-          <Text style={styles.infoTitle}>Emergency Panic Button</Text>
-          <Text style={styles.infoDescription}>
-            Press the button below in case of emergency. This will immediately alert authorities with your current location.
-          </Text>
-        </View>
-
-        <View style={styles.statusContainer}>
-          <View style={styles.statusItem}>
-            <Ionicons 
-              name={locationPermission ? "location" : "location-outline"} 
-              size={20} 
-              color={locationPermission ? "#4CAF50" : "#FF6B6B"} 
-            />
-            <Text style={[styles.statusText, { 
-              color: locationPermission ? "#4CAF50" : "#FF6B6B" 
-            }]}>
-              Location: {locationPermission ? "Enabled" : "Disabled"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.panicButtonContainer}>
+    <SafeAreaWrapper backgroundColor={colors.error} statusBarStyle="light-content">
+      <View style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.panicButton}
-            onPress={handlePanicPress}
-            disabled={isLoading}
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
             activeOpacity={0.8}
           >
-            {isLoading ? (
-              <ActivityIndicator size="large" color="white" />
-            ) : (
-              <>
-                <Ionicons name="alert-circle" size={64} color="white" />
-                <Text style={styles.panicButtonText}>EMERGENCY</Text>
-                <Text style={styles.panicButtonSubtext}>Tap to activate</Text>
-              </>
-            )}
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Emergency Alert</Text>
         </View>
 
-        <View style={styles.emergencyInfo}>
-          <Text style={styles.emergencyInfoTitle}>What happens when you press this button:</Text>
-          <Text style={styles.emergencyInfoItem}>• Your exact location is sent to authorities</Text>
-          <Text style={styles.emergencyInfoItem}>• Emergency contacts are notified</Text>
-          <Text style={styles.emergencyInfoItem}>• Security personnel are dispatched</Text>
-          <Text style={styles.emergencyInfoItem}>• Real-time tracking is activated</Text>
-        </View>
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.infoContainer}>
+            <Ionicons name="warning" size={48} color={colors.warning} />
+            <Text style={styles.infoTitle}>Emergency Panic Button</Text>
+            <Text style={styles.infoDescription}>
+              Press the button below in case of emergency. This will immediately alert authorities with your current location.
+            </Text>
+          </View>
+
+          <View style={styles.statusContainer}>
+            <View style={styles.statusItem}>
+              <Ionicons 
+                name={locationPermission ? "location" : "location-outline"} 
+                size={20} 
+                color={locationPermission ? colors.success : colors.error} 
+              />
+              <Text style={[styles.statusText, { 
+                color: locationPermission ? colors.success : colors.error 
+              }]}>
+                Location: {locationPermission ? "Enabled" : "Disabled"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.panicButtonContainer}>
+            <TouchableOpacity
+              style={[styles.panicButton, isLoading && styles.panicButtonDisabled]}
+              onPress={handlePanicPress}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="large" color={colors.text} />
+              ) : (
+                <>
+                  <Ionicons name="alert-circle" size={64} color={colors.text} />
+                  <Text style={styles.panicButtonText}>EMERGENCY</Text>
+                  <Text style={styles.panicButtonSubtext}>Tap to activate</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.emergencyInfo}>
+            <Text style={styles.emergencyInfoTitle}>What happens when you press this button:</Text>
+            <Text style={styles.emergencyInfoItem}>• Your exact location is sent to authorities</Text>
+            <Text style={styles.emergencyInfoItem}>• Emergency contacts are notified</Text>
+            <Text style={styles.emergencyInfoItem}>• Security personnel are dispatched</Text>
+            <Text style={styles.emergencyInfoItem}>• Real-time tracking is activated</Text>
+          </View>
+        </ScrollView>
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
-    padding: 8,
-    marginRight: 10,
+    padding: spacing.xs,
+    marginRight: spacing.sm,
+    minWidth: TOUCH_TARGET_SIZE,
+    minHeight: TOUCH_TARGET_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    ...typography.heading3,
+    color: colors.text,
+    flex: 1,
   },
   content: {
     flex: 1,
-    padding: 20,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   infoContainer: {
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...commonStyles.glassCardDark,
+    marginBottom: spacing.lg,
   },
   infoTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 15,
-    marginBottom: 10,
+    ...typography.heading2,
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   infoDescription: {
-    fontSize: 16,
-    color: '#666',
+    ...typography.body,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   statusContainer: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...commonStyles.card,
+    marginBottom: spacing.lg,
+    ...shadows.small,
   },
   statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    paddingVertical: spacing.xs,
   },
   statusText: {
-    fontSize: 16,
-    marginLeft: 10,
-    fontWeight: '500',
+    ...typography.bodyMedium,
+    marginLeft: spacing.sm,
   },
   panicButtonContainer: {
     alignItems: 'center',
-    marginVertical: 30,
+    marginVertical: spacing.xxl,
   },
   panicButton: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#FF4757',
+    width: isSmallDevice() ? wp(50) : wp(45),
+    height: isSmallDevice() ? wp(50) : wp(45),
+    borderRadius: isSmallDevice() ? wp(25) : wp(22.5),
+    backgroundColor: colors.error,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FF4757',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: colors.error,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 12,
+  },
+  panicButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: colors.textMuted,
   },
   panicButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 10,
+    ...typography.heading3,
+    color: colors.text,
+    marginTop: spacing.sm,
+    fontWeight: '700',
   },
   panicButtonSubtext: {
-    color: 'white',
-    fontSize: 12,
+    ...typography.caption,
+    color: colors.text,
     opacity: 0.9,
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
   emergencyInfo: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...commonStyles.card,
+    ...shadows.small,
   },
   emergencyInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15,
+    ...typography.bodyMedium,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   emergencyInfoItem: {
-    fontSize: 14,
-    color: '#666',
-    marginVertical: 4,
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
     lineHeight: 20,
   },
 });
+
+export default PanicScreen;

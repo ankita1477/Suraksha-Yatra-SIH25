@@ -27,6 +27,7 @@ import {
   validateEmail,
 } from '../../services/contactsService';
 import { getCurrentLocation } from '../../services/locationService';
+import { colors, typography, spacing, borderRadius, shadows, commonStyles } from '../../utils/theme';
 
 interface EmergencyContactsScreenProps {
   navigation: {
@@ -348,7 +349,7 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
                   value={formData.name}
                   onChangeText={(text) => setFormData({ ...formData, name: text })}
                   placeholder="Enter full name"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
 
@@ -359,7 +360,7 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
                   value={formData.phone}
                   onChangeText={(text) => setFormData({ ...formData, phone: text })}
                   placeholder="+1234567890"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -371,7 +372,7 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
                   value={formData.email}
                   onChangeText={(text) => setFormData({ ...formData, email: text })}
                   placeholder="email@example.com"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -384,7 +385,7 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
                   value={formData.relationship}
                   onChangeText={(text) => setFormData({ ...formData, relationship: text })}
                   placeholder="e.g., Father, Mother, Spouse, Friend"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
 
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d1117',
   },
   loadingText: {
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginTop: 16,
     fontSize: 16,
   },
@@ -481,6 +482,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
   },
   panicButton: {
     backgroundColor: '#dc2626',
@@ -532,12 +540,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   contactCard: {
-    backgroundColor: '#1e2a33',
-    padding: 16,
-    borderRadius: 12,
+    ...commonStyles.glassCardDark,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   contactHeader: {
     flexDirection: 'row',
@@ -560,12 +564,12 @@ const styles = StyleSheet.create({
   },
   contactPhone: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   contactEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
   },
   contactStatus: {
     alignItems: 'flex-end',
@@ -641,18 +645,15 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 6,
   },
   textInput: {
-    backgroundColor: '#0d1117',
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
-    borderRadius: 8,
+    ...commonStyles.glassInput,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#fff',
+    color: colors.text,
   },
   switchGroup: {
     flexDirection: 'row',

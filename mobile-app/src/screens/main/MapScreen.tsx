@@ -17,6 +17,10 @@ import {
   IncidentData 
 } from '../../services/alertsService';
 import socketService from '../../services/socketService';
+import useAuthStore from '../../state/authStore';
+import SafeAreaWrapper from '../../components/SafeAreaWrapper';
+import { colors, typography, spacing, commonStyles, borderRadius, shadows } from '../../utils/theme';
+import { wp, hp, isSmallDevice, TOUCH_TARGET_SIZE } from '../../utils/responsive';
 
 interface PanicAlert {
   _id: string;
@@ -29,6 +33,7 @@ interface PanicAlert {
 }
 
 export default function MapScreen() {
+  const { token, user } = useAuthStore();
   const [region, setRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null>(null);
   const [status, setStatus] = useState<string>('');
   const [incidents, setIncidents] = useState<IncidentData[]>([]);
@@ -37,22 +42,30 @@ export default function MapScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadIncidentData = async (latitude: number, longitude: number) => {
+    if (!token || !user) {
+      console.log('User not authenticated, skipping incident data load');
+      return;
+    }
+    
     setRefreshing(true);
     try {
       // Fetch nearby panic alerts
       const nearbyAlerts = await fetchNearbyAlerts(latitude, longitude, 5000);
-      setPanicAlerts(nearbyAlerts || []);
+      setPanicAlerts(Array.isArray(nearbyAlerts) ? nearbyAlerts : []);
 
       // Fetch all incidents
       const allIncidents = await fetchAllIncidents(50);
-      setIncidents(allIncidents || []);
+      setIncidents(Array.isArray(allIncidents) ? allIncidents : []);
 
       // Fetch recent panic alerts
       const recentAlerts = await fetchRecentPanicAlerts(20);
-      console.log(`Loaded ${allIncidents.length} incidents and ${recentAlerts.length} alerts`);
+      console.log(`Loaded ${allIncidents?.length || 0} incidents and ${recentAlerts?.length || 0} alerts`);
     } catch (error) {
       console.error('Failed to load incident data:', error);
-      Alert.alert('Error', 'Failed to load incident data. Please try again.');
+      // Don't show alert for auth errors, just log them
+      if (error instanceof Error && !error.message.includes('Authentication')) {
+        Alert.alert('Error', 'Failed to load incident data. Please try again.');
+      }
     } finally {
       setRefreshing(false);
     }
@@ -88,6 +101,11 @@ export default function MapScreen() {
 
       // Start periodic location updates
       interval = setInterval(async () => {
+        if (!token || !user) {
+          console.log('User not authenticated, skipping location update');
+          return;
+        }
+        
         try {
           const current = await Location.getCurrentPositionAsync({});
           const res = await sendLocationUpdate({
@@ -249,7 +267,7 @@ export default function MapScreen() {
           ))}
 
           {/* Panic alert markers */}
-          {Marker && panicAlerts.map((alert) => (
+          {Marker && Array.isArray(panicAlerts) && panicAlerts.map((alert) => (
             <Marker
               key={alert._id}
               coordinate={{

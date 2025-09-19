@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile-app",
-    "slug": "mobile-app",
+    "name": "Suraksha Yatra",
+    "slug": "suraksha-yatra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.surakshatrava.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide emergency services and safety features.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location to provide emergency services and track your safety even when the app is in the background.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to provide emergency services and track your safety even when the app is in the background."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +27,42 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.surakshatrava.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app needs access to your location to provide emergency services and safety features.",
+          "locationAlwaysPermission": "This app needs access to your location to provide emergency services and track your safety even when the app is in the background.",
+          "locationWhenInUsePermission": "This app needs access to your location to provide emergency services and safety features.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "067d0107-cf44-45f7-93ba-6e67b9e21981"
+      }
+    },
+    "owner": "rishukr"
   }
 }

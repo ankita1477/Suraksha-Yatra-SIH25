@@ -22,8 +22,17 @@ export async function sendPanicAlert(payload: PanicPayload) {
 }
 
 export async function fetchNearbyAlerts(lat: number, lng: number, radiusMeters = 1000) {
-  const res = await api.get('/panic-alerts/near', { params: { lat, lng, radiusMeters } });
-  return res.data;
+  try {
+    const res = await api.get('/panic-alerts/near', { params: { lat, lng, radiusMeters } });
+    return res.data.alerts || [];
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.warn('Authentication required for fetching nearby alerts');
+    } else {
+      console.error('Failed to fetch nearby alerts:', error);
+    }
+    return [];
+  }
 }
 
 export async function fetchAllIncidents(limit = 50) {
