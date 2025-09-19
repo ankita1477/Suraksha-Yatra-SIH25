@@ -32,22 +32,14 @@ const useAuthStore = create<AuthState>((set, get) => ({
       const refreshToken = await getItem('refreshToken');
       const userStr = await getItem('user');
       
-      if (token && refreshToken && userStr) {
-        // Try to validate the token by making a test request (with timeout)
+      if (token && refreshToken) {
+        // Try to validate the token by making a test request
         try {
           // Set the token temporarily to test it
           set({ token, refreshToken });
           
-          // Try to parse stored user data first
-          const storedUser = JSON.parse(userStr);
-          
-          // Make a test request to validate the token (with shorter timeout)
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('API request timeout')), 5000)
-          );
-          
-          const apiRequest = api.get('/auth/me');
-          const response: any = await Promise.race([apiRequest, timeoutPromise]);
+          // Make a test request to validate the token
+          const response = await api.get('/auth/me');
           const user = response.data.user;
           
           // If successful, set authenticated state
@@ -60,73 +52,36 @@ const useAuthStore = create<AuthState>((set, get) => ({
           
           // Store user data
           await setItem('user', JSON.stringify(user));
-          console.log('Authentication restored successfully with API validation');
-        } catch (error: any) {
-          console.log('API validation failed, using stored user data:', error?.message || 'Unknown error');
-          
-          // If API fails but we have stored user data, use it
-          try {
-            const user = JSON.parse(userStr);
-            set({ 
-              token, 
-              refreshToken, 
-              user, 
-              isAuthenticated: true 
-            });
-            console.log('Authentication restored from stored data (offline mode)');
-          } catch (parseError) {
-            console.error('Failed to parse stored user data:', parseError);
-            // Clear all auth data if user data is corrupted
-            try {
-              await deleteItem('token');
-              await deleteItem('refreshToken');
-              await deleteItem('user');
-            } catch (deleteError) {
-              console.error('Error clearing auth data:', deleteError);
-            }
-            set({ 
-              token: null, 
-              refreshToken: null, 
-              user: null, 
-              isAuthenticated: false 
-            });
-          }
-        }
-      } else if (token || refreshToken || userStr) {
-        // Partial auth data found, clear everything for consistency
-        console.log('Partial auth data found, clearing for consistency');
-        try {
+          console.log('Authentication restored successfully');
+        } catch (error) {
+          console.log('Stored token is invalid, clearing auth state');
+          // Token is invalid, clear everything
           await deleteItem('token');
           await deleteItem('refreshToken');
           await deleteItem('user');
-        } catch (deleteError) {
-          console.error('Error clearing partial auth data:', deleteError);
+          set({ 
+            token: null, 
+            refreshToken: null, 
+            user: null, 
+            isAuthenticated: false 
+          });
         }
-        set({ 
-          token: null, 
-          refreshToken: null, 
-          user: null, 
-          isAuthenticated: false 
-        });
-      } else {
-        // No stored credentials, user is not authenticated
-        set({ 
-          token: null, 
-          refreshToken: null, 
-          user: null, 
-          isAuthenticated: false 
-        });
-        console.log('No stored authentication found');
+      } else if (userStr && token) {
+        // Fallback: restore from stored user data if available
+        try {
+          const user = JSON.parse(userStr);
+          set({ 
+            token, 
+            refreshToken, 
+            user, 
+            isAuthenticated: true 
+          });
+        } catch (error) {
+          console.error('Failed to parse stored user data');
+        }
       }
     } catch (error) {
       console.error('Failed to bootstrap auth:', error);
-      // Ensure we set a safe state even if bootstrap fails
-      set({ 
-        token: null, 
-        refreshToken: null, 
-        user: null, 
-        isAuthenticated: false 
-      });
     } finally {
       set({ loading: false });
     }

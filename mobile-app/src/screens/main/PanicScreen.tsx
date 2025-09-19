@@ -186,7 +186,6 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
     </SafeAreaWrapper>
   );
 };
-export default PanicScreen;
 
 const styles = StyleSheet.create({
   container: {

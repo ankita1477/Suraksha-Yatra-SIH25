@@ -3,7 +3,6 @@ import './App.css';
 import { IncidentTable } from './components/IncidentTable';
 import type { Incident } from './components/IncidentTable';
 import { IncidentMap } from './components/IncidentMap';
-import { LocationTracker } from './components/LocationTracker';
 import { EmergencyServicesPanel } from './components/EmergencyServicesPanel';
 import { PanicAlertsPanel } from './components/PanicAlertsPanel';
 import { UserManagement } from './components/UserManagement';
@@ -13,67 +12,17 @@ import { useAuthToken } from './hooks/useAuthToken';
 import { getSocket } from './lib/socket';
 import axios from 'axios';
 
-interface UserLocation {
-  _id: string;
-  userId: string;
-  location: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
-  speed?: number;
-  accuracy?: number;
-  timestamp: string;
-  user?: {
-    email: string;
-    name?: string;
-  };
-}
-
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE || '';
 
 function App() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [userLocations, setUserLocations] = useState<UserLocation[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{ severity?: string }>({});
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'incidents' | 'emergency-contacts' | 'panic-alerts' | 'users' | 'notifications'>('incidents');
   const { token, setToken } = useAuthToken();
-
-  const acknowledgeIncident = useCallback(async (incidentId: string) => {
-    if (!token) return;
-    
-    try {
-      await axios.post(`${API_BASE}/incidents/${incidentId}/ack`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Update local state
-      setIncidents(prev => 
-        prev.map(incident => 
-          incident._id === incidentId 
-            ? { ...incident, status: 'acknowledged' }
-            : incident
-        )
-      );
-    } catch (error) {
-      console.error('Failed to acknowledge incident:', error);
-    }
-  }, [token]);
-
-  // Expose acknowledge function globally for map popup buttons
-  useEffect(() => {
-    (window as any).acknowledgeIncident = acknowledgeIncident;
-    return () => {
-      delete (window as any).acknowledgeIncident;
-    };
-  }, [acknowledgeIncident]);
-
-  const handleLocationUpdate = useCallback((locations: UserLocation[]) => {
-    setUserLocations(locations);
-  }, []);
 
   const loadInitial = useCallback(async () => {
     try {
@@ -173,6 +122,16 @@ function App() {
       clearInterval(interval); 
     };
   }, [loadInitial, loadUserInfo, filters.severity]);
+
+  async function acknowledge(id: string) {
+    try {
+      if (!token) return;
+      await axios.post(`${API_BASE}/incidents/${id}/ack`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setIncidents(prev => prev.map(i => i._id === id ? { ...i, status: 'acknowledged' } : i));
+    } catch (e) {
+      console.error('Ack failed', e);
+    }
+  }
 
   function handleLogout() {
     setToken(null);
@@ -419,7 +378,7 @@ function App() {
                   )}
                 </div>
               </div>
-              <IncidentTable incidents={incidents} onAck={acknowledgeIncident} />
+              <IncidentTable incidents={incidents} onAck={acknowledge} />
             </div>
 
             {/* Map Panel */}
@@ -436,16 +395,11 @@ function App() {
               <div style={{ marginBottom: 16 }}>
                 <h2 style={{ marginTop:0, marginBottom: 4, fontSize:20, fontWeight: 600, color: '#f1f5f9' }}>Live Map</h2>
                 <p style={{ margin: 0, fontSize: 13, color: '#94a3b8' }}>
-                  Showing {Math.min(incidents.length, 100)} incidents & {userLocations.length} active users
+                  Showing {Math.min(incidents.length, 100)} incidents
                 </p>
               </div>
-              <LocationTracker token={token} onLocationUpdate={handleLocationUpdate} />
               <div style={{ flex:1, minHeight:400, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(51, 65, 85, 0.3)' }}>
-                <IncidentMap 
-                  incidents={incidents.slice(0,100)} 
-                  userLocations={userLocations}
-                  mapId="incidents-map" 
-                />
+                <IncidentMap incidents={incidents.slice(0,100)} mapId="incidents-map" />
               </div>
             </div>
           </section>
@@ -471,11 +425,7 @@ function App() {
                 </p>
               </div>
               <div style={{ flex:1, minHeight:400, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(51, 65, 85, 0.3)' }}>
-                <IncidentMap 
-                  incidents={incidents.filter(i => i.type === 'panic').slice(0,100)} 
-                  userLocations={userLocations}
-                  mapId="panic-alerts-map" 
-                />
+                <IncidentMap incidents={incidents.filter(i => i.type === 'panic').slice(0,100)} mapId="panic-alerts-map" />
               </div>
             </div>
           </section>
