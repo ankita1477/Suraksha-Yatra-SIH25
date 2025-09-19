@@ -3,13 +3,16 @@ import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert, TouchableOp
 // On web, react-native-maps can break for this version; guard usage.
 let MapView: any = null;
 let Marker: any = null;
+let Circle: any = null;
 if (Platform.OS !== 'web') {
   const maps = require('react-native-maps');
   MapView = maps.default;
   Marker = maps.Marker;
+  Circle = maps.Circle;
 }
 import * as Location from 'expo-location';
 import { sendLocationUpdate } from '../../services/locationService';
+import SafeZoneService, { SafeZone, SafetyStatus } from '../../services/safeZoneService';
 import { 
   fetchNearbyAlerts, 
   fetchAllIncidents, 
@@ -38,8 +41,11 @@ export default function MapScreen() {
   const [status, setStatus] = useState<string>('');
   const [incidents, setIncidents] = useState<IncidentData[]>([]);
   const [panicAlerts, setPanicAlerts] = useState<PanicAlert[]>([]);
+  const [safeZones, setSafeZones] = useState<SafeZone[]>([]);
+  const [safetyStatus, setSafetyStatus] = useState<SafetyStatus | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const safeZoneService = SafeZoneService.getInstance();
 
   const loadIncidentData = async (latitude: number, longitude: number) => {
     if (!token || !user) {
@@ -59,7 +65,16 @@ export default function MapScreen() {
 
       // Fetch recent panic alerts
       const recentAlerts = await fetchRecentPanicAlerts(20);
-      console.log(`Loaded ${allIncidents?.length || 0} incidents and ${recentAlerts?.length || 0} alerts`);
+      
+      // Load safe zones
+      const zones = await safeZoneService.fetchSafeZones();
+      setSafeZones(zones);
+      
+      // Check current safety status
+      const safety = await safeZoneService.checkSafetyStatus(latitude, longitude);
+      setSafetyStatus(safety);
+      
+      console.log(`Loaded ${allIncidents?.length || 0} incidents, ${recentAlerts?.length || 0} alerts, and ${zones.length} safe zones`);
     } catch (error) {
       console.error('Failed to load incident data:', error);
       // Don't show alert for auth errors, just log them
@@ -86,6 +101,9 @@ export default function MapScreen() {
         Alert.alert('Permission Required', 'Location permission is needed for safety monitoring.');
         return;
       }
+
+      // Initialize safe zone service
+      await safeZoneService.initialize();
 
       const loc = await Location.getCurrentPositionAsync({});
       const newRegion = {
@@ -115,13 +133,23 @@ export default function MapScreen() {
             accuracy: current.coords.accuracy ?? undefined
           });
           
+          // Update safe zone service with new location
+          safeZoneService.updateLocation(current.coords.latitude, current.coords.longitude);
+          
+          // Check safety status
+          const safety = await safeZoneService.checkSafetyStatus(current.coords.latitude, current.coords.longitude);
+          setSafetyStatus(safety);
+          
           if (res.anomaly) {
             setStatus(`⚠️ Anomaly: ${res.anomaly}`);
+          } else if (safety && safety.withinSafeZone) {
+            const zoneCount = safety.safeZones.length;
+            setStatus(`🛡️ In ${zoneCount} safe zone${zoneCount > 1 ? 's' : ''}`);
           } else if (res.geofences && res.geofences.length) {
             const zones = res.geofences.map((g: any) => g.name).join(', ');
             setStatus(`📍 In zone: ${zones}`);
           } else {
-            setStatus('✅ Safe zone');
+            setStatus('⚠️ Outside safe zones');
           }
 
           // Update region if location changed significantly
@@ -195,6 +223,7 @@ export default function MapScreen() {
       if (interval) clearInterval(interval);
       socketService.off('incident', handleNewIncident);
       socketService.off('panic_alert', handleNewPanicAlert);
+      safeZoneService.cleanup();
     };
   }, []);
 
@@ -279,6 +308,35 @@ export default function MapScreen() {
               pinColor={alert.acknowledged ? "#22c55e" : "#dc2626"}
             />
           ))}
+
+          {/* Safe zone circles */}
+          {Circle && safeZones.map((zone) => (
+            <Circle
+              key={zone._id}
+              center={{
+                latitude: zone.center.lat,
+                longitude: zone.center.lng,
+              }}
+              radius={zone.radius}
+              strokeColor="rgba(34, 197, 94, 0.8)"
+              fillColor="rgba(34, 197, 94, 0.2)"
+              strokeWidth={2}
+            />
+          ))}
+
+          {/* Safe zone center markers */}
+          {Marker && safeZones.map((zone) => (
+            <Marker
+              key={`center-${zone._id}`}
+              coordinate={{
+                latitude: zone.center.lat,
+                longitude: zone.center.lng,
+              }}
+              title={`🛡️ ${zone.name}`}
+              description={zone.description || `Safe zone - ${zone.radius}m radius`}
+              pinColor="#22c55e"
+            />
+          ))}
         </MapView>
       )}
       
@@ -293,7 +351,8 @@ export default function MapScreen() {
       <View style={styles.connectionBar}>
         <Text style={styles.connectionText}>
           📡 {socketConnected ? 'Connected' : 'Disconnected'} | 
-          🚨 {incidents.length} incidents | ⚠️ {panicAlerts.length} alerts
+          🚨 {incidents.length} incidents | ⚠️ {panicAlerts.length} alerts | 
+          🛡️ {safeZones.length} safe zones
         </Text>
       </View>
 

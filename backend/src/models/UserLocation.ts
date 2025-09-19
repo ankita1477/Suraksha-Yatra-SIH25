@@ -6,6 +6,8 @@ export interface UserLocationDoc extends Document {
   speed?: number;
   accuracy?: number;
   anomaly?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const userLocationSchema = new Schema({

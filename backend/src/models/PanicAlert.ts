@@ -8,7 +8,9 @@ const panicAlertSchema = new Schema({
   timestamp: { type: Date, default: () => new Date(), index: true },
   message: { type: String, default: 'Emergency panic alert triggered' },
   acknowledged: { type: Boolean, default: false },
-  acknowledgedBy: { type: String }
+  acknowledgedBy: { type: String },
+  isAutomatic: { type: Boolean, default: false },
+  alertType: { type: String, enum: ['manual', 'safe-zone-exit', 'emergency'], default: 'manual' }
 }, { timestamps: true });
 
 panicAlertSchema.index({ createdAt: -1 });

@@ -1,77 +1,33 @@
-:root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
+/* Base resets / globals */
+html, body { margin:0; padding:0; font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif; }
+body { background: linear-gradient(135deg,#020617 0%,#0f172a 40%,#1e293b 100%); color:#f1f5f9; min-height:100vh; }
+*, *::before, *::after { box-sizing:border-box; }
+#root { min-height:100vh; display:contents; }
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Component layer test (verifies Tailwind + PostCSS actually run) */
+@layer components {
+  .btn { @apply inline-flex items-center gap-2 rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium shadow hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors; }
+  .panel { @apply rounded-xl bg-slate-800/60 backdrop-blur border border-slate-700/60 shadow-lg p-4; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-700 text-slate-200; }
+  .badge-danger { @apply bg-red-500/20 text-red-300; }
+  .badge-warning { @apply bg-amber-500/20 text-amber-300; }
+  .badge-success { @apply bg-emerald-500/20 text-emerald-300; }
 }
 
-* {
-  box-sizing: border-box;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-track { background:rgba(15,23,42,0.25); }
+::-webkit-scrollbar-thumb { background:rgba(100,116,139,0.45); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,0.7); }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-}
-
-/* Animations */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.4);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.6);
-}
-
-/* Focus styles */
-button:focus,
+/* Focus outlines */
+button:focus, select:focus, input:focus { outline:2px solid rgba(59,130,246,0.5); outline-offset:2px; }
 select:focus,
 input:focus {
   outline: 2px solid rgba(59, 130, 246, 0.5);
   outline-offset: 2px;
-}
-
-/* Smooth transitions */
-* {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, 
-              opacity 0.2s ease, transform 0.2s ease;
 }

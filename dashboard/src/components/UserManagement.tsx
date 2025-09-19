@@ -102,33 +102,20 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
   };
 
   return (
-    <div style={{
-      background: 'rgba(30, 41, 59, 0.8)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: 16,
-      padding: 24,
-      border: '1px solid rgba(51, 65, 85, 0.3)'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30">
+      <div className="flex justify-between items-center mb-5">
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#f1f5f9' }}>
+          <h2 className="m-0 text-xl font-semibold text-slate-100">
             User Management
           </h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: 13, color: '#94a3b8' }}>
+          <p className="mt-1 mb-0 text-sm text-slate-400">
             Monitor active users and their status
           </p>
         </div>
       </div>
 
       {/* Sub-navigation */}
-      <div style={{ 
-        display: 'flex', 
-        gap: 8, 
-        marginBottom: 20,
-        background: 'rgba(15, 23, 42, 0.6)',
-        borderRadius: 8,
-        padding: 4
-      }}>
+      <div className="flex gap-2 mb-5 bg-slate-900/60 rounded-lg p-1">
         {[
           { id: 'users' as const, label: '👥 Users', count: users.length },
           { id: 'locations' as const, label: '📍 Locations', count: userLocations.length },
@@ -137,31 +124,14 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
           <button
             key={tab.id}
             onClick={() => setActiveView(tab.id)}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              background: activeView === tab.id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-              color: activeView === tab.id ? '#93c5fd' : '#94a3b8',
-              border: activeView === tab.id ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6
-            }}
+            className={`flex-1 px-3 py-2 rounded-md text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 border ${
+              activeView === tab.id 
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' 
+                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'
+            }`}
           >
             {tab.label}
-            <span style={{
-              padding: '2px 6px',
-              background: 'rgba(156, 163, 175, 0.2)',
-              borderRadius: 8,
-              fontSize: 10,
-              fontWeight: 700
-            }}>
+            <span className="px-1.5 py-0.5 bg-slate-400/20 rounded text-xs font-bold">
               {tab.count}
             </span>
           </button>
@@ -169,26 +139,11 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
       </div>
 
       {error && (
-        <div style={{
-          padding: 12,
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 8,
-          color: '#fca5a5',
-          marginBottom: 16,
-          fontSize: 13
-        }}>
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 mb-4 text-sm">
           {error}
           <button
             onClick={() => setError(null)}
-            style={{
-              float: 'right',
-              background: 'none',
-              border: 'none',
-              color: '#fca5a5',
-              cursor: 'pointer',
-              fontSize: 16
-            }}
+            className="float-right bg-none border-none text-red-300 cursor-pointer text-base"
           >
             ×
           </button>
@@ -196,22 +151,9 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
       )}
 
       {loading ? (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          padding: 40,
-          gap: 12
-        }}>
-          <div style={{
-            width: 20,
-            height: 20,
-            border: '2px solid rgba(148, 163, 184, 0.3)',
-            borderTop: '2px solid #94a3b8',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <span style={{ color: '#94a3b8' }}>Loading user data...</span>
+        <div className="flex items-center justify-center py-10 gap-3">
+          <div className="w-5 h-5 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin"></div>
+          <span className="text-slate-400">Loading user data...</span>
         </div>
       ) : (
         <>
@@ -219,28 +161,24 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
           {activeView === 'users' && (
             <div>
               {users.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: 40,
-                  color: '#64748b'
-                }}>
-                  <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.5 }}>👥</div>
+                <div className="text-center py-10 text-slate-500">
+                  <div className="text-2xl mb-2 opacity-50">👥</div>
                   <div>No users found</div>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                  <div className="text-xs opacity-70 mt-1">
                     User data will appear here when available
                   </div>
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr style={{ borderBottom: '2px solid rgba(59, 130, 246, 0.3)' }}>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>User</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Role</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'center', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Locations</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'center', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Tokens</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Last Active</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Joined</th>
+                      <tr className="border-b-2 border-blue-500/30">
+                        <th className="px-4 py-3 text-left text-slate-100 font-semibold text-xs uppercase">User</th>
+                        <th className="px-4 py-3 text-left text-slate-100 font-semibold text-xs uppercase">Role</th>
+                        <th className="px-4 py-3 text-center text-slate-100 font-semibold text-xs uppercase">Locations</th>
+                        <th className="px-4 py-3 text-center text-slate-100 font-semibold text-xs uppercase">Tokens</th>
+                        <th className="px-4 py-3 text-left text-slate-100 font-semibold text-xs uppercase">Last Active</th>
+                        <th className="px-4 py-3 text-left text-slate-100 font-semibold text-xs uppercase">Joined</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -249,30 +187,18 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
                         return (
                           <tr
                             key={user._id}
-                            style={{
-                              borderBottom: '1px solid rgba(51, 65, 85, 0.3)',
-                              background: index % 2 === 0 ? 'rgba(15, 23, 42, 0.2)' : 'transparent'
-                            }}
+                            className={`border-b border-slate-600/30 ${
+                              index % 2 === 0 ? 'bg-slate-900/20' : 'bg-transparent'
+                            } hover:bg-slate-700/30 transition-colors`}
                           >
-                            <td style={{ padding: '12px 16px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: '50%',
-                                  background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 12,
-                                  fontWeight: 'bold',
-                                  color: 'white'
-                                }}>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
                                   {user.email.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                  <div style={{ color: '#e2e8f0', fontWeight: 500 }}>{user.email}</div>
-                                  <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
+                                  <div className="text-slate-200 font-medium">{user.email}</div>
+                                  <div className="text-xs text-slate-400 font-mono">
                                     ID: {user._id}
                                   </div>
                                 </div>
@@ -346,14 +272,10 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
 
           {/* Tokens View */}
           {activeView === 'tokens' && (
-            <div style={{
-              textAlign: 'center',
-              padding: 40,
-              color: '#64748b'
-            }}>
-              <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.5 }}>🔔</div>
+            <div className="text-center py-10 text-slate-500">
+              <div className="text-2xl mb-2 opacity-50">🔔</div>
               <div>Push notification tokens</div>
-              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+              <div className="text-xs opacity-70 mt-1">
                 Device notification tokens will be managed here
               </div>
             </div>

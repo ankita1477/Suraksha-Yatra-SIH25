@@ -22,7 +22,7 @@ let locationSubscription: Location.LocationSubscription | null = null;
 let isTrackingActive = false;
 
 // Define the background task
-TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
   if (error) {
     console.error('Background location error:', error);
     return;
@@ -33,12 +33,16 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
       const location = locations[0];
       console.log('Background location update:', location);
       // Send location update to backend
-      sendLocationUpdate({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        speed: location.coords.speed || undefined,
-        accuracy: location.coords.accuracy || undefined,
-      }).catch(err => console.error('Failed to send background location:', err));
+      try {
+        await sendLocationUpdate({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          speed: location.coords.speed || undefined,
+          accuracy: location.coords.accuracy || undefined,
+        });
+      } catch (err) {
+        console.error('Failed to send background location:', err);
+      }
     }
   }
 });

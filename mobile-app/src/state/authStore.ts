@@ -28,9 +28,17 @@ const useAuthStore = create<AuthState>((set, get) => ({
   bootstrap: async () => {
     try {
       set({ loading: true });
+      console.log('Starting auth bootstrap...');
+      
       const token = await getItem('token');
       const refreshToken = await getItem('refreshToken');
       const userStr = await getItem('user');
+      
+      console.log('Retrieved tokens:', { 
+        hasToken: !!token, 
+        hasRefreshToken: !!refreshToken, 
+        hasUser: !!userStr 
+      });
       
       if (token && refreshToken) {
         // Try to validate the token by making a test request
@@ -38,9 +46,20 @@ const useAuthStore = create<AuthState>((set, get) => ({
           // Set the token temporarily to test it
           set({ token, refreshToken });
           
-          // Make a test request to validate the token
-          const response = await api.get('/auth/me');
+          console.log('Testing token validity...');
+          
+          // Make a test request to validate the token with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await api.get('/auth/me', {
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
           const user = response.data.user;
+          
+          console.log('Token validation successful, user:', user?.email);
           
           // If successful, set authenticated state
           set({ 
@@ -54,7 +73,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
           await setItem('user', JSON.stringify(user));
           console.log('Authentication restored successfully');
         } catch (error) {
-          console.log('Stored token is invalid, clearing auth state');
+          console.log('Stored token is invalid, clearing auth state. Error:', error);
           // Token is invalid, clear everything
           await deleteItem('token');
           await deleteItem('refreshToken');
@@ -82,8 +101,19 @@ const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       console.error('Failed to bootstrap auth:', error);
+      // Clear auth state on bootstrap error
+      set({ 
+        token: null, 
+        refreshToken: null, 
+        user: null, 
+        isAuthenticated: false 
+      });
     } finally {
-      set({ loading: false });
+      // Add small delay to prevent race conditions
+      setTimeout(() => {
+        set({ loading: false });
+        console.log('Auth bootstrap completed');
+      }, 100);
     }
   },
   login: async (email: string, password: string) => {

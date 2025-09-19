@@ -205,91 +205,204 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
     });
   };
 
-  const getServiceTypeColor = (type: string) => {
-    const colors = {
-      police: 'bg-blue-100 text-blue-800',
-      hospital: 'bg-red-100 text-red-800',
-      fire: 'bg-orange-100 text-orange-800',
-      ambulance: 'bg-green-100 text-green-800',
-      tourist_helpline: 'bg-purple-100 text-purple-800',
-      other: 'bg-gray-100 text-gray-800'
-    };
-    return colors[type as keyof typeof colors] || colors.other;
-  };
-
   if (loading) {
-    return <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
+    return (
+      <div style={{ 
+        background:'rgba(30, 41, 59, 0.8)', 
+        backdropFilter: 'blur(12px)',
+        borderRadius:16, 
+        padding:24, 
+        border: '1px solid rgba(51, 65, 85, 0.3)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 400
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12,
+          color: '#94a3b8' 
+        }}>
+          <div style={{ 
+            width: 24, 
+            height: 24, 
+            border: '2px solid rgba(148, 163, 184, 0.3)',
+            borderTop: '2px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          Loading emergency services...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div style={{ 
+      background:'rgba(30, 41, 59, 0.8)', 
+      backdropFilter: 'blur(12px)',
+      borderRadius:16, 
+      padding:24, 
+      border: '1px solid rgba(51, 65, 85, 0.3)'
+    }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, gap:12 }}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Emergency Services Management</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 style={{ margin:0, fontSize:24, fontWeight: 700, color: '#f1f5f9', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Emergency Services Management
+          </h2>
+          <p style={{ margin: '8px 0 0 0', fontSize: 14, color: '#94a3b8' }}>
             Manage emergency services available to tourists - {services.length} services configured
           </p>
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          style={{ 
+            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: 12,
+            border: 'none',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
           Add Emergency Service
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div style={{ 
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          color: '#fca5a5',
+          padding: '12px 16px',
+          borderRadius: 12,
+          marginBottom: 20,
+          fontSize: 14
+        }}>
           {error}
         </div>
       )}
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 20 }}>
         {services.map((service) => (
-          <div key={service._id} className="bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
+          <div key={service._id} style={{ 
+            background:'rgba(15, 23, 42, 0.8)', 
+            borderRadius:12, 
+            border: '1px solid rgba(51, 65, 85, 0.3)',
+            overflow: 'hidden',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getServiceTypeColor(service.serviceType)}`}>
-                    {service.serviceType.replace('_', ' ').toUpperCase()}
+                  <h3 style={{ fontSize: 18, fontWeight: 600, color: '#f1f5f9', margin: '0 0 8px 0' }}>{service.name}</h3>
+                  <span style={{ 
+                    display: 'inline-block',
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    background: service.serviceType === 'police' ? 'rgba(59, 130, 246, 0.2)' : 
+                               service.serviceType === 'hospital' ? 'rgba(239, 68, 68, 0.2)' :
+                               service.serviceType === 'fire' ? 'rgba(249, 115, 22, 0.2)' :
+                               service.serviceType === 'ambulance' ? 'rgba(34, 197, 94, 0.2)' :
+                               service.serviceType === 'tourist_helpline' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                    color: service.serviceType === 'police' ? '#93c5fd' : 
+                           service.serviceType === 'hospital' ? '#fca5a5' :
+                           service.serviceType === 'fire' ? '#fdba74' :
+                           service.serviceType === 'ambulance' ? '#86efac' :
+                           service.serviceType === 'tourist_helpline' ? '#c4b5fd' : '#d1d5db'
+                  }}>
+                    {service.serviceType.replace('_', ' ')}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
                     onClick={() => toggleServiceStatus(service._id)}
-                    className={`w-4 h-4 rounded-full ${service.isActive ? 'bg-green-500' : 'bg-gray-300'}`}
+                    style={{ 
+                      width: 12, 
+                      height: 12, 
+                      borderRadius: '50%', 
+                      background: service.isActive ? '#22c55e' : '#64748b',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
                     title={service.isActive ? 'Active' : 'Inactive'}
                   />
                 </div>
               </div>
               
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <span className="font-medium">Phone:</span>
-                  <span className="ml-2 text-blue-600 font-mono">{service.phoneNumber}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: '#94a3b8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 500, color: '#cbd5e1' }}>📞 Phone:</span>
+                  <span style={{ color: '#3b82f6', fontFamily: 'monospace', fontWeight: 500 }}>{service.phoneNumber}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="font-medium">Hours:</span>
-                  <span className="ml-2">{service.availableHours}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 500, color: '#cbd5e1' }}>🕒 Hours:</span>
+                  <span>{service.availableHours}</span>
                 </div>
                 <div>
-                  <span className="font-medium">Address:</span>
-                  <p className="mt-1 text-gray-700">{service.address}, {service.city}, {service.state}</p>
+                  <span style={{ fontWeight: 500, color: '#cbd5e1' }}>📍 Address:</span>
+                  <p style={{ margin: '4px 0 0 0', color: '#e2e8f0', lineHeight: 1.4 }}>
+                    {service.address}, {service.city}, {service.state}
+                  </p>
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 mt-4 pt-4 border-t border-gray-100">
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                gap: 12, 
+                marginTop: 16, 
+                paddingTop: 16, 
+                borderTop: '1px solid rgba(51, 65, 85, 0.3)' 
+              }}>
                 <button
                   onClick={() => handleEdit(service)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  style={{ 
+                    color: '#3b82f6',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(service._id)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  style={{ 
+                    color: '#ef4444',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   Delete
                 </button>
@@ -301,50 +414,124 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
 
       {/* Add/Edit Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(0, 0, 0, 0.6)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 50,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
+            backdropFilter: 'blur(12px)',
+            borderRadius: 16, 
+            border: '1px solid rgba(51, 65, 85, 0.3)',
+            width: '100%', 
+            maxWidth: 500, 
+            margin: 16,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <div style={{ padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ 
+                  fontSize: 20, 
+                  fontWeight: 600, 
+                  color: '#f1f5f9',
+                  margin: 0
+                }}>
                   {editingService ? 'Edit Emergency Service' : 'Add New Emergency Service'}
                 </h3>
                 <button
                   onClick={resetForm}
-                  className="text-gray-400 hover:text-gray-600"
+                  style={{ 
+                    color: '#94a3b8',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 24,
+                    cursor: 'pointer',
+                    padding: 4,
+                    borderRadius: 6,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                  onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
                 >
                   ×
                 </button>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                    Service Name
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ 
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      border: '1px solid rgba(51, 65, 85, 0.5)',
+                      borderRadius: 8,
+                      color: '#e2e8f0',
+                      fontSize: 14,
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                    Phone Number
+                  </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ 
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      border: '1px solid rgba(51, 65, 85, 0.5)',
+                      borderRadius: 8,
+                      color: '#e2e8f0',
+                      fontSize: 14,
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                    Service Type
+                  </label>
                   <select
                     value={formData.serviceType}
                     onChange={(e) => setFormData({ ...formData, serviceType: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ 
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      border: '1px solid rgba(51, 65, 85, 0.5)',
+                      borderRadius: 8,
+                      color: '#e2e8f0',
+                      fontSize: 14,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="police">Police</option>
                     <option value="hospital">Hospital</option>
@@ -356,76 +543,160 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                    Address
+                  </label>
                   <input
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ 
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      border: '1px solid rgba(51, 65, 85, 0.5)',
+                      borderRadius: 8,
+                      color: '#e2e8f0',
+                      fontSize: 14,
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                     required
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                      City
+                    </label>
                     <input
                       type="text"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ 
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: '1px solid rgba(51, 65, 85, 0.5)',
+                        borderRadius: 8,
+                        color: '#e2e8f0',
+                        fontSize: 14,
+                        outline: 'none',
+                        transition: 'all 0.2s'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                      State
+                    </label>
                     <input
                       type="text"
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ 
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: '1px solid rgba(51, 65, 85, 0.5)',
+                        borderRadius: 8,
+                        color: '#e2e8f0',
+                        fontSize: 14,
+                        outline: 'none',
+                        transition: 'all 0.2s'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                       required
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Available Hours</label>
+                  <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#cbd5e1', marginBottom: 6 }}>
+                    Available Hours
+                  </label>
                   <input
                     type="text"
                     value={formData.availableHours}
                     onChange={(e) => setFormData({ ...formData, availableHours: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ 
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      border: '1px solid rgba(51, 65, 85, 0.5)',
+                      borderRadius: 8,
+                      color: '#e2e8f0',
+                      fontSize: 14,
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}
                     placeholder="e.g., 24/7, 9:00 AM - 5:00 PM"
                     required
                   />
                 </div>
                 
-                <div className="flex items-center">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     type="checkbox"
                     id="isActive"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    style={{ 
+                      width: 16, 
+                      height: 16,
+                      accentColor: '#3b82f6'
+                    }}
                   />
-                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="isActive" style={{ fontSize: 14, color: '#cbd5e1' }}>
                     Active Service
                   </label>
                 </div>
                 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 16 }}>
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                    style={{ 
+                      padding: '10px 16px',
+                      color: '#94a3b8',
+                      background: 'rgba(71, 85, 105, 0.3)',
+                      border: '1px solid rgba(71, 85, 105, 0.5)',
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(71, 85, 105, 0.5)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(71, 85, 105, 0.3)'}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    style={{ 
+                      padding: '10px 16px',
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
                     {editingService ? 'Update Service' : 'Add Service'}
                   </button>

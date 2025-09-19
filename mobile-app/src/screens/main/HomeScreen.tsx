@@ -42,13 +42,29 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   useEffect(() => {
-    // Initialize socket connection
-    socketService.connect().then(() => {
-      setSocketConnected(socketService.isConnected());
-    });
+    // Initialize socket connection with error handling
+    const initializeSocket = async () => {
+      try {
+        await socketService.connect();
+        setSocketConnected(socketService.isConnected());
+      } catch (error) {
+        console.error('Socket connection failed:', error);
+        setSocketConnected(false);
+      }
+    };
 
-    // Initialize location tracking
-    initializeLocationTracking();
+    // Initialize location tracking with error handling
+    const initializeLocation = async () => {
+      try {
+        await initializeLocationTracking();
+      } catch (error) {
+        console.error('Location initialization failed:', error);
+      }
+    };
+
+    // Initialize services
+    initializeSocket();
+    initializeLocation();
 
     // Start entrance animations
     Animated.parallel([
@@ -113,7 +129,7 @@ export default function HomeScreen({ navigation }: Props) {
       const success = await startLocationTracking(
         (location, response) => {
           console.log('Location updated:', location.coords);
-          if (response.anomaly) {
+          if (response?.anomaly) {
             setRecentAlerts(prev => prev + 1);
           }
         },
@@ -125,13 +141,20 @@ export default function HomeScreen({ navigation }: Props) {
       
       if (success) {
         console.log('Location tracking started successfully');
+      } else {
+        console.log('Location tracking failed to start');
       }
     } catch (error) {
       console.error('Failed to start location tracking:', error);
+      // Don't crash the app, just log the error
     }
     
     // Update initial status
-    updateLocationStatus();
+    try {
+      updateLocationStatus();
+    } catch (error) {
+      console.error('Failed to update location status:', error);
+    }
   };
 
   const updateLocationStatus = async () => {

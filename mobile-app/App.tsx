@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerForPushNotificationsAsync, addNotificationResponseListener } from './src/services/notificationService';
 import useAuthStore from './src/state/authStore';
 
@@ -44,10 +45,12 @@ export default function App() {
   }, [bootstrap]);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <RootNavigator />
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 

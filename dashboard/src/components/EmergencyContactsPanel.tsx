@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-interface EmergencyService {
+interface EmergencyContact {
   _id: string;
   name: string;
   phoneNumber: string;
-  serviceType: 'police' | 'hospital' | 'fire' | 'ambulance' | 'tourist_helpline' | 'other';
-  address: string;
-  city: string;
-  state: string;
-  isActive: boolean;
-  availableHours: string;
+  relationship: string;
+  isPrimary: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,21 +15,17 @@ interface Props {
 }
 
 export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
-  const [services, setServices] = useState<EmergencyService[]>([]);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingService, setEditingService] = useState<EmergencyService | null>(null);
+  const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
-    serviceType: 'police' as const,
-    address: '',
-    city: '',
-    state: '',
-    isActive: true,
-    availableHours: '24/7'
+    relationship: '',
+    isPrimary: false
   });
 
   const fetchContacts = async () => {
@@ -151,63 +143,30 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
   };
 
   return (
-    <div style={{
-      background: 'rgba(30, 41, 59, 0.8)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: 16,
-      padding: 24,
-      border: '1px solid rgba(51, 65, 85, 0.3)'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30">
+      <div className="flex justify-between items-center mb-5">
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#f1f5f9' }}>
+          <h2 className="text-xl font-semibold text-slate-100 m-0">
             Emergency Contacts Management
           </h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: 13, color: '#94a3b8' }}>
+          <p className="text-xs text-slate-400 mt-1 mb-0">
             {contacts.length} contacts registered
           </p>
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          style={{
-            padding: '8px 16px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-none rounded-lg text-xs font-semibold cursor-pointer transition-transform duration-200 hover:scale-105"
         >
           Add Contact
         </button>
       </div>
 
       {error && (
-        <div style={{
-          padding: 12,
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 8,
-          color: '#fca5a5',
-          marginBottom: 16,
-          fontSize: 13
-        }}>
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 mb-4 text-xs">
           {error}
           <button
             onClick={() => setError(null)}
-            style={{
-              float: 'right',
-              background: 'none',
-              border: 'none',
-              color: '#fca5a5',
-              cursor: 'pointer',
-              fontSize: 16
-            }}
+            className="float-right bg-none border-none text-red-300 cursor-pointer ml-2 text-lg leading-none"
           >
             ×
           </button>
@@ -215,124 +174,81 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
       )}
 
       {(showAddForm || editingContact) && (
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.8)',
-          borderRadius: 12,
-          padding: 20,
-          marginBottom: 20,
-          border: '1px solid rgba(51, 65, 85, 0.3)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: '#f1f5f9' }}>
+        <div className="bg-slate-900/80 rounded-xl p-5 border border-slate-600/30 mb-6">
+          <h3 className="text-base text-slate-100 mb-4">
             {editingContact ? 'Edit Contact' : 'Add New Contact'}
           </h3>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>
+                <label className="block text-xs text-slate-400 mb-1">
                   Name *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(f => ({ ...f, name: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'rgba(30, 41, 59, 0.8)',
-                    border: '1px solid rgba(51, 65, 85, 0.5)',
-                    borderRadius: 6,
-                    color: '#e2e8f0',
-                    fontSize: 13
-                  }}
+                  className="w-full p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="Contact name"
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>
+                <label className="block text-xs text-slate-400 mb-1">
                   Phone Number *
                 </label>
                 <input
                   type="tel"
                   value={formData.phoneNumber}
-                  onChange={(e) => setFormData(f => ({ ...f, phoneNumber: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'rgba(30, 41, 59, 0.8)',
-                    border: '1px solid rgba(51, 65, 85, 0.5)',
-                    borderRadius: 6,
-                    color: '#e2e8f0',
-                    fontSize: 13
-                  }}
+                  className="w-full p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="+1234567890"
                 />
               </div>
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>
+            <div className="mb-4">
+              <label className="block text-xs text-slate-400 mb-1">
                 Relationship *
               </label>
               <select
                 value={formData.relationship}
-                onChange={(e) => setFormData(f => ({ ...f, relationship: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, relationship: e.target.value }))}
                 required
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: 'rgba(30, 41, 59, 0.8)',
-                  border: '1px solid rgba(51, 65, 85, 0.5)',
-                  borderRadius: 6,
-                  color: '#e2e8f0',
-                  fontSize: 13
-                }}
+                className="w-full p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Select relationship</option>
-                <option value="family">Family</option>
+                <option value="spouse">Spouse</option>
+                <option value="parent">Parent</option>
+                <option value="child">Child</option>
+                <option value="sibling">Sibling</option>
                 <option value="friend">Friend</option>
                 <option value="colleague">Colleague</option>
-                <option value="emergency_service">Emergency Service</option>
                 <option value="other">Other</option>
               </select>
             </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <div className="mb-5">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.isPrimary}
-                  onChange={(e) => setFormData(f => ({ ...f, isPrimary: e.target.checked }))}
-                  style={{ width: 16, height: 16 }}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isPrimary: e.target.checked }))}
+                  className="w-4 h-4"
                 />
-                <span style={{ fontSize: 13, color: '#94a3b8' }}>Primary contact</span>
+                <span className="text-xs text-slate-400">Primary contact</span>
               </label>
             </div>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="flex gap-3">
               <button
                 type="submit"
-                style={{
-                  padding: '8px 16px',
-                  background: 'linear-gradient(135deg, #059669, #047857)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 {editingContact ? 'Update' : 'Add'} Contact
               </button>
               <button
                 type="button"
                 onClick={cancelForm}
-                style={{
-                  padding: '8px 16px',
-                  background: 'transparent',
-                  color: '#94a3b8',
-                  border: '1px solid rgba(51, 65, 85, 0.5)',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  cursor: 'pointer'
-                }}
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
@@ -342,140 +258,61 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
       )}
 
       {loading ? (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          padding: 40,
-          gap: 12
-        }}>
-          <div style={{
-            width: 20,
-            height: 20,
-            border: '2px solid rgba(148, 163, 184, 0.3)',
-            borderTop: '2px solid #94a3b8',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <span style={{ color: '#94a3b8' }}>Loading contacts...</span>
+        <div className="flex items-center justify-center py-12">
+          <div className="w-6 h-6 border-2 border-slate-400/30 border-t-blue-500 rounded-full animate-spin mr-3"></div>
+          <span className="text-slate-400">Loading contacts...</span>
         </div>
       ) : contacts.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: 40,
-          color: '#64748b'
-        }}>
-          <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.5 }}>📞</div>
-          <div>No emergency contacts found</div>
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-            Add contacts to enable emergency notifications
-          </div>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4 opacity-30">📞</div>
+          <p className="text-slate-400 mb-2">No emergency contacts yet</p>
+          <p className="text-sm text-slate-500">
+            Add your first emergency contact to get started
+          </p>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid rgba(59, 130, 246, 0.3)' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Name</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Phone</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Relationship</th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Primary</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Added</th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', color: '#f1f5f9', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map((contact, index) => (
-                <tr
-                  key={contact._id}
-                  style={{
-                    borderBottom: '1px solid rgba(51, 65, 85, 0.3)',
-                    background: index % 2 === 0 ? 'rgba(15, 23, 42, 0.2)' : 'transparent'
-                  }}
-                >
-                  <td style={{ padding: '12px 16px', color: '#e2e8f0', fontWeight: 500 }}>
-                    {contact.name}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {contact.phoneNumber}
-                  </td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: 12,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      textTransform: 'capitalize',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      color: '#93c5fd',
-                      border: '1px solid rgba(59, 130, 246, 0.2)'
-                    }}>
-                      {contact.relationship}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    {contact.isPrimary ? (
-                      <span style={{ color: '#fbbf24', fontSize: 16 }}>⭐</span>
-                    ) : (
-                      <span style={{ color: '#64748b' }}>-</span>
+        <div className="space-y-3">
+          {contacts.map((contact) => (
+            <div key={contact._id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-600/20">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="text-base font-medium text-slate-200">{contact.name}</h4>
+                    {contact.isPrimary && (
+                      <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">
+                        Primary
+                      </span>
                     )}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: 12 }}>
-                    {new Date(contact.createdAt).toLocaleDateString()}
-                  </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                      <button
-                        onClick={() => handleTestContact(contact._id)}
-                        style={{
-                          padding: '4px 8px',
-                          background: 'rgba(34, 197, 94, 0.1)',
-                          border: '1px solid rgba(34, 197, 94, 0.3)',
-                          borderRadius: 4,
-                          color: '#86efac',
-                          fontSize: 11,
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Test
-                      </button>
-                      <button
-                        onClick={() => handleEdit(contact)}
-                        style={{
-                          padding: '4px 8px',
-                          background: 'rgba(59, 130, 246, 0.1)',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
-                          borderRadius: 4,
-                          color: '#93c5fd',
-                          fontSize: 11,
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(contact._id)}
-                        style={{
-                          padding: '4px 8px',
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          borderRadius: 4,
-                          color: '#fca5a5',
-                          fontSize: 11,
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div className="text-sm text-slate-400 space-y-1">
+                    <p>📞 {contact.phoneNumber}</p>
+                    <p>👥 {contact.relationship}</p>
+                    <p className="text-xs">Added {new Date(contact.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleTestContact(contact._id)}
+                    className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs hover:bg-green-600/30 transition-colors"
+                  >
+                    Test
+                  </button>
+                  <button
+                    onClick={() => handleEdit(contact)}
+                    className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs hover:bg-blue-600/30 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(contact._id)}
+                    className="px-3 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/30 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

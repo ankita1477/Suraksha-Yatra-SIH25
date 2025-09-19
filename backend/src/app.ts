@@ -3,10 +3,12 @@ import cors from 'cors';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
 import { createPanicRouter, createPanicQueryRouter } from './routes/panic';
-import { locationRouter } from './routes/location';
+import { createLocationRouter } from './routes/location';
 import { incidentsRouter } from './routes/incidents';
 import { emergencyContactsRouter } from './routes/emergencyContacts';
 import { userRouter } from './routes/user';
+import { createSafeZoneRouter } from './routes/safeZones';
+import { GeofencingService } from './services/geofencing';
 import { Server } from 'socket.io';
 import http from 'http';
 
@@ -20,9 +22,8 @@ export function createApp() {
   app.use('/api/user', userRouter);
   app.use('/api/emergency-contacts', emergencyContactsRouter);
 
-  app.use('/api/location', locationRouter);
   app.use('/api/incidents', incidentsRouter);
-  // We'll inject panic route later when socket is ready
+  // Location and panic routes will be attached when socket is ready
   return app;
 }
 
@@ -30,8 +31,13 @@ export function attachRealtime(app: express.Express) {
   const server = http.createServer(app);
   const io = new Server(server, { cors: { origin: '*'} });
 
-  // Panic route needs io
+  // Initialize geofencing service
+  const geofencingService = new GeofencingService(io);
+
+  // Routes that need io or geofencing service
   app.use('/api/panic', createPanicRouter(io));
+  app.use('/api/location', createLocationRouter(geofencingService));
+  app.use('/api/safe-zones', createSafeZoneRouter(io));
   
   // Panic alerts query routes
   app.use('/api/panic-alerts', createPanicQueryRouter());
