@@ -80,8 +80,8 @@ export function loadConfig(): AppConfig {
     appEnvironment: getConfigValue('APP_ENVIRONMENT', 'development'),
 
     // API Configuration
-    apiBaseUrl: getConfigValue('API_BASE_URL', 'http://192.168.0.107:4000/api'),
-    wsBaseUrl: getConfigValue('WS_BASE_URL', 'ws://192.168.0.107:4000'),
+    apiBaseUrl: getConfigValue('API_BASE_URL', 'http://localhost:3000/api'),
+    wsBaseUrl: getConfigValue('WS_BASE_URL', 'ws://localhost:3000'),
 
     // Feature Flags
     enableLocationTracking: getConfigValue('ENABLE_LOCATION_TRACKING', true, 'boolean'),

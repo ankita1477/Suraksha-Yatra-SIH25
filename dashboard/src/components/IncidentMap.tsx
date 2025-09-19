@@ -10,32 +10,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-interface UserLocation {
-  _id: string;
-  userId: string;
-  location: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
-  };
-  speed?: number;
-  accuracy?: number;
-  timestamp: string;
-  user?: {
-    email: string;
-    name?: string;
-  };
-}
-
 interface Props { 
-  incidents: { _id: string; severity: string; location?: any; type: string; status?: string; }[];
-  userLocations?: UserLocation[];
+  incidents: { _id: string; severity: string; location?: any; type: string; }[];
   mapId?: string; // Add unique map ID
 }
 
-export const IncidentMap: React.FC<Props> = ({ incidents, userLocations = [], mapId = 'default' }) => {
+export const IncidentMap: React.FC<Props> = ({ incidents, mapId = 'default' }) => {
   const mapRef = useRef<L.Map | null>(null);
-  const incidentMarkersRef = useRef<L.CircleMarker[]>([]);
-  const userMarkersRef = useRef<L.Marker[]>([]);
+  const markersRef = useRef<L.CircleMarker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef(false);
 
@@ -114,30 +96,20 @@ export const IncidentMap: React.FC<Props> = ({ incidents, userLocations = [], ma
   }, []); // Only run once on mount
 
   useEffect(() => {
-    // Update markers when incidents or user locations change
+    // Update markers when incidents change
     if (mapRef.current && isInitializedRef.current) {
       try {
-        // Clear existing incident markers
-        incidentMarkersRef.current.forEach(marker => {
+        // Clear existing markers
+        markersRef.current.forEach(marker => {
           try {
             mapRef.current?.removeLayer(marker);
           } catch (e) {
-            console.warn('Error removing incident marker:', e);
+            console.warn('Error removing marker:', e);
           }
         });
-        incidentMarkersRef.current = [];
+        markersRef.current = [];
 
-        // Clear existing user markers
-        userMarkersRef.current.forEach(marker => {
-          try {
-            mapRef.current?.removeLayer(marker);
-          } catch (e) {
-            console.warn('Error removing user marker:', e);
-          }
-        });
-        userMarkersRef.current = [];
-
-        // Add incident markers
+        // Add new markers
         const validIncidents = incidents.filter(i => 
           i.location?.coordinates && 
           Array.isArray(i.location.coordinates) && 
@@ -158,111 +130,36 @@ export const IncidentMap: React.FC<Props> = ({ incidents, userLocations = [], ma
               }
               
               const color = severityColor(incident.severity);
-              const statusColor = getStatusColor(incident.status);
               
               const marker = L.circleMarker([lat, lng], { 
                 radius: 8, 
                 color: color, 
-                fillColor: statusColor, 
+                fillColor: color, 
                 fillOpacity: 0.7,
                 weight: 2,
                 opacity: 1
               });
               
               marker.bindPopup(`
-                <div style="font-family: system-ui; padding: 8px; min-width: 200px;">
+                <div style="font-family: system-ui; padding: 4px;">
                   <strong style="color: ${color};">${incident.type.toUpperCase()}</strong><br/>
-                  <span>Severity: <span style="color: ${color};">${incident.severity}</span></span><br/>
-                  <span>Status: <span style="color: ${statusColor};">${incident.status || 'open'}</span></span><br/>
+                  <span>Severity: ${incident.severity}</span><br/>
                   <small>Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
-                  ${incident.status === 'open' ? '<br/><button onclick="acknowledgeIncident(\'' + incident._id + '\')" style="margin-top: 8px; padding: 4px 8px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">Acknowledge</button>' : ''}
                 </div>
               `);
               
               marker.addTo(mapRef.current);
-              incidentMarkersRef.current.push(marker);
+              markersRef.current.push(marker);
             } catch (error) {
               console.warn('Error adding marker for incident:', incident._id, error);
             }
           }
         });
 
-        // Add user location markers
-        const validUserLocations = userLocations.filter(loc => 
-          loc.location?.coordinates && 
-          Array.isArray(loc.location.coordinates) && 
-          loc.location.coordinates.length === 2 &&
-          typeof loc.location.coordinates[0] === 'number' &&
-          typeof loc.location.coordinates[1] === 'number'
-        );
-
-        validUserLocations.forEach(userLoc => {
-          if (mapRef.current) {
-            try {
-              const [lng, lat] = userLoc.location.coordinates;
-              
-              // Validate coordinates
-              if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                console.warn('Invalid user coordinates:', lat, lng);
-                return;
-              }
-
-              // Create custom user icon
-              const userIcon = L.divIcon({
-                className: 'user-location-marker',
-                html: `<div style="
-                  width: 16px; 
-                  height: 16px; 
-                  background: #3b82f6; 
-                  border: 2px solid white; 
-                  border-radius: 50%; 
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                  position: relative;
-                ">
-                  <div style="
-                    position: absolute;
-                    top: -4px;
-                    left: -4px;
-                    width: 24px;
-                    height: 24px;
-                    background: rgba(59, 130, 246, 0.3);
-                    border-radius: 50%;
-                    animation: user-pulse 2s infinite;
-                  "></div>
-                </div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-              });
-
-              const marker = L.marker([lat, lng], { icon: userIcon });
-              
-              const timeSinceUpdate = new Date().getTime() - new Date(userLoc.timestamp).getTime();
-              const minutesAgo = Math.floor(timeSinceUpdate / 60000);
-              
-              marker.bindPopup(`
-                <div style="font-family: system-ui; padding: 8px; min-width: 180px;">
-                  <strong style="color: #3b82f6;">👤 User Location</strong><br/>
-                  <span>User: ${userLoc.user?.email || `ID: ${userLoc.userId.slice(-6)}`}</span><br/>
-                  <span>Last Update: ${minutesAgo < 1 ? 'Just now' : `${minutesAgo}m ago`}</span><br/>
-                  ${userLoc.speed ? `<span>Speed: ${(userLoc.speed * 3.6).toFixed(1)} km/h</span><br/>` : ''}
-                  ${userLoc.accuracy ? `<span>Accuracy: ±${userLoc.accuracy.toFixed(0)}m</span><br/>` : ''}
-                  <small>Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
-                </div>
-              `);
-              
-              marker.addTo(mapRef.current);
-              userMarkersRef.current.push(marker);
-            } catch (error) {
-              console.warn('Error adding marker for user location:', userLoc._id, error);
-            }
-          }
-        });
-
-        // Fit map to all markers if we have any
-        const allMarkers = [...incidentMarkersRef.current, ...userMarkersRef.current];
-        if (allMarkers.length > 0) {
+        // Fit map to markers if we have incidents
+        if (validIncidents.length > 0 && markersRef.current.length > 0) {
           try {
-            const group = new L.FeatureGroup(allMarkers);
+            const group = new L.FeatureGroup(markersRef.current);
             const bounds = group.getBounds();
             if (bounds.isValid()) {
               mapRef.current.fitBounds(bounds.pad(0.1));
@@ -276,7 +173,7 @@ export const IncidentMap: React.FC<Props> = ({ incidents, userLocations = [], ma
         console.error('Error updating map markers:', error);
       }
     }
-  }, [incidents, userLocations, mapId]);
+  }, [incidents, mapId]);
 
   return (
     <div 
@@ -300,14 +197,5 @@ function severityColor(s: string) {
     case 'high': return '#f97316';
     case 'medium': return '#eab308';
     default: return '#10b981';
-  }
-}
-
-function getStatusColor(status?: string) {
-  switch (status) {
-    case 'acknowledged': return '#eab308';
-    case 'resolved': return '#10b981';
-    case 'open':
-    default: return '#ef4444';
   }
 }

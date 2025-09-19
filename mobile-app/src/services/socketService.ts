@@ -1,9 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { getItem } from '../utils/secureStore';
-import { config } from '../config/env';
 
-// Derive socket URL from configured API base URL to keep a single source of truth
-const SOCKET_URL = (config.apiBaseUrl?.replace('/api', '') || '').replace(/^http:/, 'http:');
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
 
 interface IncidentData {
   _id: string;
