@@ -287,7 +287,7 @@ export default function HomeScreen({ navigation }: Props) {
                 { transform: [{ scale: pulseAnim }] }
               ]}
             >
-              Welcome back,
+              {getGreeting()},
             </Animated.Text>
             <Text style={styles.userName}>
               {user?.email?.split('@')[0] || 'Traveler'} 👋

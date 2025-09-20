@@ -1,7 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getItem } from '../utils/secureStore';
-
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
+import { getWsBaseUrl } from '../config/env';
 
 interface IncidentData {
   _id: string;
@@ -25,6 +24,15 @@ class SocketService {
 
     const token = await getItem('token');
     
+    /**
+     * Resolve socket URL lazily so OTA updates or runtime override applies.
+     */
+    async function resolveSocketUrl(): Promise<string> {
+      const base = await getWsBaseUrl();
+      return base.replace(/^ws/, 'http'); // ensure http(s) for socket.io endpoint
+    }
+
+    const SOCKET_URL = await resolveSocketUrl();
     this.socket = io(SOCKET_URL, {
       auth: token ? { token } : undefined,
       transports: ['websocket', 'polling'],

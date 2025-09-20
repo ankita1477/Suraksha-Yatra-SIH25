@@ -1,4 +1,9 @@
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Runtime override keys
+const RUNTIME_API_KEY = 'RUNTIME_API_BASE_URL';
+const RUNTIME_WS_KEY = 'RUNTIME_WS_BASE_URL';
 
 export interface AppConfig {
   // Environment
@@ -200,6 +205,60 @@ export function isFeatureEnabled(feature: keyof AppConfig): boolean {
   return Boolean(config[feature]);
 }
 
+/**
+ * Get the (possibly overridden) API base URL at runtime.
+ * Falls back to build-time config if no override stored.
+ */
+export async function getApiBaseUrl(): Promise<string> {
+  try {
+    const stored = await AsyncStorage.getItem(RUNTIME_API_KEY);
+    return stored || config.apiBaseUrl;
+  } catch {
+    return config.apiBaseUrl;
+  }
+}
+
+/**
+ * Get the (possibly overridden) WebSocket base URL at runtime.
+ */
+export async function getWsBaseUrl(): Promise<string> {
+  try {
+    const stored = await AsyncStorage.getItem(RUNTIME_WS_KEY);
+    return stored || config.wsBaseUrl;
+  } catch {
+    return config.wsBaseUrl;
+  }
+}
+
+/**
+ * Set (or clear) a runtime override for API base URL. Passing empty string clears.
+ */
+export async function setApiBaseUrl(url?: string): Promise<void> {
+  if (!url) {
+    await AsyncStorage.removeItem(RUNTIME_API_KEY);
+    return;
+  }
+  await AsyncStorage.setItem(RUNTIME_API_KEY, url.replace(/\/$/, ''));
+}
+
+/**
+ * Set (or clear) a runtime override for WebSocket base URL.
+ */
+export async function setWsBaseUrl(url?: string): Promise<void> {
+  if (!url) {
+    await AsyncStorage.removeItem(RUNTIME_WS_KEY);
+    return;
+  }
+  await AsyncStorage.setItem(RUNTIME_WS_KEY, url.replace(/\/$/, ''));
+}
+
+/**
+ * Utility to reset all runtime overrides (useful for QA / debugging)
+ */
+export async function clearRuntimeOverrides() {
+  await AsyncStorage.multiRemove([RUNTIME_API_KEY, RUNTIME_WS_KEY]);
+}
+
 export default {
   config,
   loadConfig,
@@ -211,4 +270,9 @@ export default {
   getApiUrl,
   getWebSocketUrl,
   isFeatureEnabled,
+  getApiBaseUrl,
+  getWsBaseUrl,
+  setApiBaseUrl,
+  setWsBaseUrl,
+  clearRuntimeOverrides,
 };

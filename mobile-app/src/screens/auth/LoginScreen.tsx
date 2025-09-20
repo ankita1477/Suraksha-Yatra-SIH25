@@ -48,6 +48,14 @@ export default function LoginScreen({ navigation }: Props) {
     }))
   ).current;
 
+  // Get current time for greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   useEffect(() => {
     // Start entrance animations
     Animated.parallel([
@@ -195,8 +203,8 @@ export default function LoginScreen({ navigation }: Props) {
             style={[
               styles.floatingParticle,
               {
-                backgroundColor: index % 3 === 0 ? colors.vibrantYellow : 
-                                index % 3 === 1 ? colors.vibrantPurple : colors.vibrantPink,
+                backgroundColor: index % 3 === 0 ? colors.cardYellow : 
+                                index % 3 === 1 ? colors.cardPurple : colors.cardPink,
                 transform: [
                   { translateX: particle.x },
                   { translateY: particle.y },
@@ -231,30 +239,22 @@ export default function LoginScreen({ navigation }: Props) {
             >
               {/* Logo and Title Section */}
               <View style={styles.headerSection}>
-                <LinearGradient
-                  colors={[colors.vibrantPink, colors.vibrantPurple]}
-                  style={styles.logoContainer}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
+                <View style={[styles.logoContainer, { backgroundColor: colors.cardPink }]}>
                   <Ionicons name="shield-checkmark" size={48} color={colors.background} />
-                </LinearGradient>
+                </View>
                 
                 <Text style={styles.appTitle}>Suraksha Yatra</Text>
                 <Text style={styles.appSubtitle}>
                   {mode === 'login' 
-                    ? 'Welcome back! Your safety journey continues' 
-                    : 'Begin your journey with ultimate safety'
+                    ? `${getGreeting()}! Welcome back to your safety journey` 
+                    : `${getGreeting()}! Begin your journey with ultimate safety`
                   }
                 </Text>
               </View>
 
               {/* Form Card */}
               <View style={styles.formCard}>
-                <LinearGradient
-                  colors={['rgba(248, 255, 127, 0.1)', 'rgba(135, 190, 254, 0.1)']}
-                  style={styles.formGradient}
-                >
+                <View style={styles.formGradient}>
                   {/* Mode Toggle */}
                   <View style={styles.modeToggle}>
                     <TouchableOpacity
@@ -295,7 +295,7 @@ export default function LoginScreen({ navigation }: Props) {
                       {
                         borderColor: inputFocusAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [colors.border, colors.vibrantYellow]
+                          outputRange: [colors.border, colors.cardYellow]
                         })
                       }
                     ]}>
@@ -323,7 +323,7 @@ export default function LoginScreen({ navigation }: Props) {
                       {
                         borderColor: inputFocusAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [colors.border, colors.vibrantPurple]
+                          outputRange: [colors.border, colors.cardPurple]
                         })
                       }
                     ]}>
@@ -366,12 +366,7 @@ export default function LoginScreen({ navigation }: Props) {
                       onPress={handleButtonPress}
                       disabled={loading}
                     >
-                      <LinearGradient
-                        colors={[colors.vibrantPink, colors.vibrantPurple]}
-                        style={styles.submitGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
+                      <View style={[styles.submitGradient, { backgroundColor: colors.cardPink }]}>
                         {loading ? (
                           <ActivityIndicator size="small" color={colors.background} />
                         ) : (
@@ -379,7 +374,7 @@ export default function LoginScreen({ navigation }: Props) {
                             {mode === 'login' ? 'Sign In' : 'Sign Up'}
                           </Text>
                         )}
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </Animated.View>
 
@@ -391,7 +386,7 @@ export default function LoginScreen({ navigation }: Props) {
                       </TouchableOpacity>
                     )}
                   </View>
-                </LinearGradient>
+                </View>
               </View>
 
               {/* Footer */}
@@ -474,11 +469,12 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
     borderWidth: 1,
-    borderColor: 'rgba(248, 255, 127, 0.3)',
+    borderColor: colors.border,
   },
   formGradient: {
     padding: spacing.xl,
     borderRadius: borderRadius.xl,
+    backgroundColor: colors.surface,
   },
   modeToggle: {
     flexDirection: 'row',

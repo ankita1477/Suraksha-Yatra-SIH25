@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import SplashScreen from '../screens/auth/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import MapScreen from '../screens/main/MapScreen';
@@ -11,6 +12,7 @@ import useAuthStore from '../state/authStore';
 import { ActivityIndicator, View } from 'react-native';
 
 export type RootStackParamList = {
+  Splash: undefined;
   Login: undefined;
   Home: undefined;
   Map: undefined;
@@ -37,9 +39,12 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName={isAuthenticated ? "Home" : "Login"}
+        initialRouteName="Splash"
         screenOptions={{ headerShown: false }}
       >
+        {/* Always show splash first */}
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        
         {isAuthenticated ? (
           // Authenticated stack
           <>
