@@ -117,35 +117,31 @@ export function SafeZoneMap({
 
   return (
     <div className="safe-zone-map">
-      <div className="map-controls mb-4 p-4 bg-white rounded-lg shadow">
-        <div className="flex items-center gap-4">
+      <div className="map-controls mb-4 p-4 bg-slate-800/70 backdrop-blur border border-slate-600/40 rounded-xl shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <button
             onClick={startCreating}
             disabled={createZone.isCreating}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+            className="px-4 py-2 rounded-md text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-500 text-white shadow"
           >
             {createZone.isCreating ? 'Click on map to place zone' : 'Create Safe Zone'}
           </button>
-          
           {createZone.isCreating && (
             <>
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Radius (meters):</label>
+              <div className="flex items-center gap-2 text-slate-300">
+                <label className="text-xs font-medium uppercase tracking-wide">Radius (m)</label>
                 <input
                   type="number"
                   min="50"
                   max="5000"
                   value={createZone.radius}
-                  onChange={(e) => setCreateZone(prev => ({ 
-                    ...prev, 
-                    radius: parseInt(e.target.value) || 500 
-                  }))}
-                  className="w-20 px-2 py-1 border border-gray-300 rounded"
+                  onChange={(e) => setCreateZone(prev => ({ ...prev, radius: parseInt(e.target.value) || 500 }))}
+                  className="w-24 px-2 py-1 rounded-md bg-slate-900/80 border border-slate-600/50 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <button
                 onClick={handleCancelCreate}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                className="px-4 py-2 rounded-md text-sm font-semibold bg-slate-600/60 hover:bg-slate-500/70 text-slate-100 transition-colors"
               >
                 Cancel
               </button>
@@ -240,63 +236,58 @@ export function SafeZoneMap({
 
       {/* Create Zone Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Create Safe Zone</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-slate-900/90 border border-slate-700/60 shadow-2xl rounded-2xl w-full max-w-md p-6 text-slate-200">
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Create Safe Zone</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+                <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Name *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder:text-slate-500"
                   placeholder="Enter zone name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder:text-slate-500"
                   placeholder="Optional description"
                   rows={3}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Alert Threshold (seconds)</label>
+                <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Alert Threshold (seconds)</label>
                 <input
                   type="number"
                   min="10"
                   max="3600"
                   value={formData.alertThreshold}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    alertThreshold: parseInt(e.target.value) || 30 
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setFormData(prev => ({ ...prev, alertThreshold: parseInt(e.target.value) || 30 }))}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Time before emergency alert is sent
-                </p>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wide">Time before emergency alert is sent</p>
               </div>
-              <div className="text-sm text-gray-600">
-                <p><strong>Center:</strong> {createZone.center?.lat.toFixed(6)}, {createZone.center?.lng.toFixed(6)}</p>
-                <p><strong>Radius:</strong> {createZone.radius} meters</p>
+              <div className="text-xs grid grid-cols-2 gap-2 bg-slate-800/60 rounded-lg p-3 border border-slate-700/40">
+                <p className="text-slate-400"><span className="font-semibold text-slate-300">Center:</span> {createZone.center?.lat.toFixed(5)}, {createZone.center?.lng.toFixed(5)}</p>
+                <p className="text-slate-400"><span className="font-semibold text-slate-300">Radius:</span> {createZone.radius} m</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleCreateZone}
                 disabled={!formData.name.trim()}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                className="flex-1 px-4 py-2 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600/40 text-white shadow disabled:cursor-not-allowed transition-colors"
               >
                 Create Zone
               </button>
               <button
                 onClick={handleCancelCreate}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                className="flex-1 px-4 py-2 rounded-lg font-semibold bg-slate-600/70 hover:bg-slate-500/70 text-slate-100 transition-colors"
               >
                 Cancel
               </button>
@@ -307,55 +298,51 @@ export function SafeZoneMap({
 
       {/* Edit Zone Modal */}
       {selectedZone && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Edit Safe Zone</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-slate-900/90 border border-slate-700/60 shadow-2xl rounded-2xl w-full max-w-md p-6 text-slate-200">
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Edit Safe Zone</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Name</label>
                 <input
                   type="text"
                   value={selectedZone.name}
                   onChange={(e) => setSelectedZone(prev => prev ? { ...prev, name: e.target.value } : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Description</label>
                 <textarea
                   value={selectedZone.description || ''}
                   onChange={(e) => setSelectedZone(prev => prev ? { ...prev, description: e.target.value } : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
                   rows={3}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Radius (meters)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="5000"
-                  value={selectedZone.radius}
-                  onChange={(e) => setSelectedZone(prev => prev ? { 
-                    ...prev, 
-                    radius: parseInt(e.target.value) || 500 
-                  } : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Alert Threshold (seconds)</label>
-                <input
-                  type="number"
-                  min="10"
-                  max="3600"
-                  value={selectedZone.alertThreshold}
-                  onChange={(e) => setSelectedZone(prev => prev ? { 
-                    ...prev, 
-                    alertThreshold: parseInt(e.target.value) || 30 
-                  } : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Radius (m)</label>
+                  <input
+                    type="number"
+                    min="50"
+                    max="5000"
+                    value={selectedZone.radius}
+                    onChange={(e) => setSelectedZone(prev => prev ? { ...prev, radius: parseInt(e.target.value) || 500 } : null)}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold tracking-wide mb-1 text-slate-300 uppercase">Alert Threshold</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="3600"
+                    value={selectedZone.alertThreshold}
+                    onChange={(e) => setSelectedZone(prev => prev ? { ...prev, alertThreshold: parseInt(e.target.value) || 30 } : null)}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
@@ -369,15 +356,21 @@ export function SafeZoneMap({
                   });
                   setSelectedZone(null);
                 }}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="flex-1 px-4 py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow transition-colors"
               >
                 Update
               </button>
               <button
                 onClick={() => setSelectedZone(null)}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                className="flex-1 px-4 py-2 rounded-lg font-semibold bg-slate-600/70 hover:bg-slate-500/70 text-slate-100 transition-colors"
               >
                 Cancel
+              </button>
+              <button
+                onClick={() => deleteZone(selectedZone)}
+                className="flex-1 px-4 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-500 text-white shadow transition-colors"
+              >
+                Delete
               </button>
             </div>
           </div>

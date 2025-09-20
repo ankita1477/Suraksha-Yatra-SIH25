@@ -1,242 +1,173 @@
 from pymongo import MongoClient
-from config import Config
+from pymongo.errors import ConnectionFailure
 import logging
+import config
 from datetime import datetime, timedelta
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-class DatabaseClient:
+class MongoDBClient:
     def __init__(self):
-        self.client = MongoClient(Config.DATABASE_URL)
-        self.db = self.client.get_default_database()
-        
-        # Collections
-        self.incidents = self.db.incidents
-        self.user_locations = self.db.userlocations
-        self.users = self.db.users
-        self.panic_alerts = self.db.panicalerts
-        
-        logger.info("Database client initialized")
+        self.client = None
+        self.db = None
+        self.connect()
     
-    def get_historical_incidents(self, days=30, location_bounds=None):
-        """Get historical incidents for training"""
+    def connect(self):
+        """Connect to MongoDB"""
         try:
-            start_date = datetime.utcnow() - timedelta(days=days)
-            
+            self.client = MongoClient(config.MONGODB_URL)
+            self.db = self.client[config.MONGODB_DATABASE]
+            # Test connection
+            self.client.admin.command('ping')
+            logger.info("Successfully connected to MongoDB")
+        except ConnectionFailure as e:
+            logger.error(f"Failed to connect to MongoDB: {str(e)}")
+            raise
+    
+    def get_incidents_in_area(self, center_lat, center_lng, radius_km, start_date=None, end_date=None, incident_types=None):
+        """
+        Get incidents within a specified area and time range
+        """
+        try:
+            # Build query
             query = {
-                'createdAt': {'$gte': start_date}
-            }
-            
-            if location_bounds:
-                # Add geospatial query if location bounds provided
-                query['location'] = {
+                'location': {
                     '$geoWithin': {
-                        '$box': location_bounds
+                        '$centerSphere': [
+                            [center_lng, center_lat],
+                            radius_km / 6371  # Convert km to radians
+                        ]
                     }
                 }
+            }
             
-            incidents = list(self.incidents.find(query))
+            # Add date range filter
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter['$gte'] = start_date
+                if end_date:
+                    date_filter['$lte'] = end_date
+                query['createdAt'] = date_filter
+            
+            # Add incident type filter
+            if incident_types:
+                query['type'] = {'$in': incident_types}
+            
+            # Execute query - using 'incidents' collection (lowercase, pluralized by Mongoose)
+            incidents = list(self.db.incidents.find(query))
             return incidents
             
         except Exception as e:
-            logger.error(f"Error fetching historical incidents: {str(e)}")
+            logger.error(f"Error fetching incidents: {str(e)}")
             return []
     
-    def get_user_movement_patterns(self, user_id, days=7):
-        """Get user movement patterns for anomaly detection"""
+    def get_user_location_history(self, user_id, hours_back=24):
+        """
+        Get user's recent location history
+        """
         try:
-            start_date = datetime.utcnow() - timedelta(days=days)
+            start_time = datetime.utcnow() - timedelta(hours=hours_back)
             
-            locations = list(self.user_locations.find({
+            query = {
                 'userId': user_id,
-                'createdAt': {'$gte': start_date}
-            }).sort('createdAt', 1))
+                'timestamp': {'$gte': start_time}
+            }
             
+            # Using 'userlocations' collection (lowercase, pluralized by Mongoose)
+            locations = list(self.db.userlocations.find(query).sort('timestamp', 1))
             return locations
             
         except Exception as e:
-            logger.error(f"Error fetching user movement patterns: {str(e)}")
+            logger.error(f"Error fetching user location history: {str(e)}")
             return []
     
-    def get_area_incident_stats(self, latitude, longitude, radius_km=1):
-        """Get incident statistics for a specific area"""
+    def get_panic_alerts_in_area(self, center_lat, center_lng, radius_km, start_date=None, end_date=None):
+        """
+        Get panic alerts within a specified area and time range
+        """
         try:
-            # Convert radius to degrees (approximate)
-            radius_deg = radius_km / 111.32
-            
             query = {
                 'location': {
-                    '$near': {
-                        '$geometry': {
-                            'type': 'Point',
-                            'coordinates': [longitude, latitude]
-                        },
-                        '$maxDistance': radius_km * 1000  # Convert to meters
-                    }
-                }
-            }
-            
-            incidents = list(self.incidents.find(query))
-            
-            # Calculate statistics
-            total_incidents = len(incidents)
-            severity_counts = {}
-            type_counts = {}
-            
-            for incident in incidents:
-                severity = incident.get('severity', 'unknown')
-                incident_type = incident.get('type', 'unknown')
-                
-                severity_counts[severity] = severity_counts.get(severity, 0) + 1
-                type_counts[incident_type] = type_counts.get(incident_type, 0) + 1
-            
-            return {
-                'total_incidents': total_incidents,
-                'severity_distribution': severity_counts,
-                'type_distribution': type_counts,
-                'incidents': incidents
-            }
-            
-        except Exception as e:
-            logger.error(f"Error fetching area incident stats: {str(e)}")
-            return {
-                'total_incidents': 0,
-                'severity_distribution': {},
-                'type_distribution': {},
-                'incidents': []
-            }
-    
-    def get_time_based_patterns(self, location_bounds=None):
-        """Get time-based incident patterns"""
-        try:
-            pipeline = [
-                {
-                    '$match': {
-                        'createdAt': {
-                            '$gte': datetime.utcnow() - timedelta(days=90)
-                        }
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': {
-                            'hour': {'$hour': '$createdAt'},
-                            'dayOfWeek': {'$dayOfWeek': '$createdAt'},
-                            'severity': '$severity'
-                        },
-                        'count': {'$sum': 1}
-                    }
-                }
-            ]
-            
-            if location_bounds:
-                pipeline[0]['$match']['location'] = {
                     '$geoWithin': {
-                        '$box': location_bounds
+                        '$centerSphere': [
+                            [center_lng, center_lat],
+                            radius_km / 6371
+                        ]
                     }
                 }
+            }
             
-            patterns = list(self.incidents.aggregate(pipeline))
-            return patterns
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter['$gte'] = start_date
+                if end_date:
+                    date_filter['$lte'] = end_date
+                query['timestamp'] = date_filter
+            
+            # Using 'panicalerts' collection (lowercase, pluralized by Mongoose)
+            alerts = list(self.db.panicalerts.find(query))
+            return alerts
             
         except Exception as e:
-            logger.error(f"Error fetching time-based patterns: {str(e)}")
+            logger.error(f"Error fetching panic alerts: {str(e)}")
             return []
     
-    def get_user_profile(self, user_id):
-        """Get user profile for personalized risk assessment"""
+    def get_historical_route_data(self, start_lat, start_lng, end_lat, end_lng, radius_km=1.0):
+        """
+        Get historical incident data along a route
+        """
         try:
-            user = self.users.find_one({'_id': user_id})
+            # For MVP, we'll check incidents near start and end points
+            # In production, this would analyze the entire route corridor
             
-            if user:
-                # Get user's historical data
-                recent_locations = self.get_user_movement_patterns(user_id, days=30)
-                
-                # Calculate user-specific metrics
-                total_distance = self._calculate_total_distance(recent_locations)
-                avg_speed = self._calculate_average_speed(recent_locations)
-                common_routes = self._identify_common_routes(recent_locations)
-                
-                return {
-                    'user_info': user,
-                    'movement_stats': {
-                        'total_distance_km': total_distance,
-                        'average_speed_kmh': avg_speed,
-                        'common_routes': common_routes
-                    }
-                }
+            start_incidents = self.get_incidents_in_area(start_lat, start_lng, radius_km)
+            end_incidents = self.get_incidents_in_area(end_lat, end_lng, radius_km)
             
-            return None
+            # Combine and deduplicate
+            all_incidents = start_incidents + end_incidents
+            unique_incidents = []
+            seen_ids = set()
+            
+            for incident in all_incidents:
+                incident_id = str(incident.get('_id'))
+                if incident_id not in seen_ids:
+                    unique_incidents.append(incident)
+                    seen_ids.add(incident_id)
+            
+            return unique_incidents
             
         except Exception as e:
-            logger.error(f"Error fetching user profile: {str(e)}")
+            logger.error(f"Error fetching route data: {str(e)}")
+            return []
+    
+    def store_risk_prediction(self, prediction_data):
+        """
+        Store risk prediction for future analysis
+        """
+        try:
+            prediction_data['timestamp'] = datetime.utcnow()
+            result = self.db.risk_predictions.insert_one(prediction_data)
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error(f"Error storing risk prediction: {str(e)}")
             return None
     
-    def store_prediction(self, prediction_type, input_data, result, model_version):
-        """Store prediction results for model improvement"""
+    def store_anomaly_detection(self, anomaly_data):
+        """
+        Store anomaly detection result
+        """
         try:
-            prediction_doc = {
-                'type': prediction_type,
-                'input_data': input_data,
-                'result': result,
-                'model_version': model_version,
-                'timestamp': datetime.utcnow()
-            }
-            
-            self.db.predictions.insert_one(prediction_doc)
-            
+            anomaly_data['timestamp'] = datetime.utcnow()
+            result = self.db.anomaly_detections.insert_one(anomaly_data)
+            return str(result.inserted_id)
         except Exception as e:
-            logger.error(f"Error storing prediction: {str(e)}")
+            logger.error(f"Error storing anomaly detection: {str(e)}")
+            return None
     
-    def _calculate_total_distance(self, locations):
-        """Calculate total distance traveled from location data"""
-        if len(locations) < 2:
-            return 0
-        
-        total_distance = 0
-        for i in range(1, len(locations)):
-            # Simple distance calculation (should use proper geospatial calculation)
-            prev_loc = locations[i-1]['location']['coordinates']
-            curr_loc = locations[i]['location']['coordinates']
-            
-            # Approximate distance using Euclidean distance
-            lat_diff = curr_loc[1] - prev_loc[1]
-            lon_diff = curr_loc[0] - prev_loc[0]
-            distance = ((lat_diff ** 2 + lon_diff ** 2) ** 0.5) * 111.32  # Convert to km
-            
-            total_distance += distance
-        
-        return total_distance
-    
-    def _calculate_average_speed(self, locations):
-        """Calculate average speed from location data"""
-        if len(locations) < 2:
-            return 0
-        
-        speeds = []
-        for location in locations:
-            if 'speed' in location and location['speed'] is not None:
-                speeds.append(location['speed'] * 3.6)  # Convert m/s to km/h
-        
-        return sum(speeds) / len(speeds) if speeds else 0
-    
-    def _identify_common_routes(self, locations):
-        """Identify common routes from location data"""
-        # Simplified route identification
-        # In a real implementation, this would use clustering algorithms
-        routes = []
-        
-        if len(locations) > 10:
-            # Group locations into potential routes
-            # This is a simplified version
-            start_points = locations[::10]  # Sample every 10th location
-            
-            for i, start in enumerate(start_points[:5]):  # Limit to 5 routes
-                routes.append({
-                    'route_id': i,
-                    'start_location': start['location']['coordinates'],
-                    'frequency': len(locations) // 10  # Simplified frequency
-                })
-        
-        return routes
+    def close(self):
+        """Close MongoDB connection"""
+        if self.client:
+            self.client.close()
+            logger.info("MongoDB connection closed")

@@ -6,8 +6,10 @@ import { createPanicRouter, createPanicQueryRouter } from './routes/panic';
 import { createLocationRouter } from './routes/location';
 import { incidentsRouter } from './routes/incidents';
 import { emergencyContactsRouter } from './routes/emergencyContacts';
+import emergencyServicesRouter from './routes/emergencyServices';
 import { userRouter } from './routes/user';
 import { createSafeZoneRouter } from './routes/safeZones';
+import { aiRouter } from './routes/ai';
 import { GeofencingService } from './services/geofencing';
 import { Server } from 'socket.io';
 import http from 'http';
@@ -21,6 +23,8 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
   app.use('/api/emergency-contacts', emergencyContactsRouter);
+  app.use('/api/emergency-services', emergencyServicesRouter);
+  app.use('/api/ai', aiRouter);
 
   app.use('/api/incidents', incidentsRouter);
   // Location and panic routes will be attached when socket is ready

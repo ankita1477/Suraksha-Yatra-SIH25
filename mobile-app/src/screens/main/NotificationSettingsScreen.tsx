@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   TouchableOpacity,
   Switch,
   ScrollView,
-  SafeAreaView,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import SafeAreaWrapper from '../../components/SafeAreaWrapper';
+import { colors, typography, spacing, borderRadius, shadows } from '../../utils/theme';
+import { wp, hp } from '../../utils/responsive';
 import {
   NotificationSettings,
   getNotificationSettings,
@@ -39,7 +43,26 @@ export default function NotificationSettingsScreen({ navigation }: NotificationS
   const [loading, setLoading] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
   useEffect(() => {
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     loadSettings();
     loadNotificationHistory();
   }, []);
@@ -151,14 +174,31 @@ export default function NotificationSettingsScreen({ navigation }: NotificationS
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notification Settings</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+      <View style={styles.container}>
+        {/* Header - HomeScreen Style */}
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Notification Settings</Text>
+              <Text style={styles.headerSubtitle}>Manage your alerts</Text>
+            </View>
+            
+            <View style={styles.placeholder} />
+          </View>
+        </Animated.View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Main Settings */}
@@ -329,7 +369,8 @@ export default function NotificationSettingsScreen({ navigation }: NotificationS
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </View>
+    </SafeAreaWrapper>
   );
 }
 
@@ -350,29 +391,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: {
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#1e2a33',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(51, 65, 85, 0.3)',
   },
-  backButton: {
-    padding: 8,
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
+    ...typography.heading2,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginTop: spacing.xs,
+  },
+  backButton: {
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
   },
   placeholder: {
     width: 40,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   section: {
     marginTop: 24,
@@ -380,19 +434,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
-    marginBottom: 16,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1e2a33',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   settingInfo: {
     flex: 1,
@@ -407,11 +461,11 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#fff',
+    color: colors.text,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   actionButton: {

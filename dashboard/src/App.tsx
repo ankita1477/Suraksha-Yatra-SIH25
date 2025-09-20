@@ -3,6 +3,7 @@ import { EnhancedIncidentTable } from './components/EnhancedIncidentTable';
 import type { Incident } from './components/EnhancedIncidentTable';
 import { EnhancedIncidentMap } from './components/EnhancedIncidentMap';
 import { EmergencyServicesPanel } from './components/EmergencyServicesPanel';
+import { EmergencyContactsPanel } from './components/EmergencyContactsPanel';
 import { PanicAlertsPanel } from './components/PanicAlertsPanel';
 import { UserManagement } from './components/UserManagement';
 import { SafeZoneManagement } from './components/SafeZoneManagement';
@@ -23,7 +24,7 @@ function DashboardApp() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{ severity?: string }>({});
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'incidents' | 'emergency-contacts' | 'panic-alerts' | 'users' | 'notifications' | 'safe-zones'>('incidents');
+  const [activeTab, setActiveTab] = useState<'incidents' | 'emergency-contacts' | 'emergency-services' | 'panic-alerts' | 'users' | 'notifications' | 'safe-zones'>('incidents');
   const { token, setToken } = useAuthToken();
   const { addToast } = useToast();
 
@@ -283,7 +284,8 @@ function DashboardApp() {
             {[
               { id: 'incidents' as const, label: 'Incidents', icon: '📊', badge: incidents.filter(i => i.status === 'open').length },
               { id: 'panic-alerts' as const, label: 'Panic Alerts', icon: '🚨', badge: incidents.filter(i => i.type === 'panic').length },
-              { id: 'emergency-contacts' as const, label: 'Emergency Services', icon: '🏥' },
+              { id: 'emergency-contacts' as const, label: 'Emergency Contacts', icon: '📞' },
+              { id: 'emergency-services' as const, label: 'Emergency Services', icon: '🏥' },
               { id: 'safe-zones' as const, label: 'Safe Zones', icon: '🛡️' },
               { id: 'users' as const, label: 'User Management', icon: '👥' },
               { id: 'notifications' as const, label: 'Notifications', icon: '🔔' }
@@ -332,11 +334,13 @@ function DashboardApp() {
           {activeTab === 'incidents' && (
             <section className="space-y-6">
               {/* Analytics Dashboard */}
-              <DashboardAnalytics 
-                token={token || ''} 
-                incidents={incidents} 
-                connected={connected} 
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+                <DashboardAnalytics 
+                  token={token || ''} 
+                  incidents={incidents} 
+                  connected={connected} 
+                />
+              </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
                 {/* Incidents Panel */}
@@ -405,6 +409,12 @@ function DashboardApp() {
           )}
 
           {activeTab === 'emergency-contacts' && (
+            <section>
+              <EmergencyContactsPanel token={token || ''} />
+            </section>
+          )}
+
+          {activeTab === 'emergency-services' && (
             <section>
               <EmergencyServicesPanel token={token || ''} />
             </section>

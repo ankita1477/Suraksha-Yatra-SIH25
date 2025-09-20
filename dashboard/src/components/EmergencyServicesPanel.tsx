@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 interface EmergencyService {
-  _id: string;
+  id: string;
   name: string;
   phoneNumber: string;
   serviceType: 'police' | 'hospital' | 'fire' | 'ambulance' | 'tourist_helpline' | 'other';
@@ -10,6 +10,11 @@ interface EmergencyService {
   state: string;
   isActive: boolean;
   availableHours: string;
+  description?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -45,68 +50,19 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
     availableHours: '24/7'
   });
 
-  // Mock data for now - in real app, this would come from backend
-  const mockServices: EmergencyService[] = [
-    {
-      _id: '1',
-      name: 'Central Police Station',
-      phoneNumber: '100',
-      serviceType: 'police',
-      address: '123 Main Street',
-      city: 'New Delhi',
-      state: 'Delhi',
-      isActive: true,
-      availableHours: '24/7',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z'
-    },
-    {
-      _id: '2',
-      name: 'All India Institute of Medical Sciences',
-      phoneNumber: '108',
-      serviceType: 'hospital',
-      address: 'Ansari Nagar',
-      city: 'New Delhi',
-      state: 'Delhi',
-      isActive: true,
-      availableHours: '24/7',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z'
-    },
-    {
-      _id: '3',
-      name: 'Fire Department',
-      phoneNumber: '101',
-      serviceType: 'fire',
-      address: 'Fire Station Road',
-      city: 'New Delhi',
-      state: 'Delhi',
-      isActive: true,
-      availableHours: '24/7',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z'
-    },
-    {
-      _id: '4',
-      name: 'India Tourism Helpline',
-      phoneNumber: '1363',
-      serviceType: 'tourist_helpline',
-      address: 'Ministry of Tourism',
-      city: 'New Delhi',
-      state: 'Delhi',
-      isActive: true,
-      availableHours: '24/7',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z'
-    }
-  ];
-
   const fetchServices = async () => {
     try {
       setLoading(true);
-      // For now, use mock data
-      // In real app: const response = await fetch('/api/emergency-services', { headers: { Authorization: `Bearer ${token}` } });
-      setServices(mockServices);
+      const response = await fetch('/api/emergency-services', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data.data.services || []);
+      } else {
+        setError('Failed to fetch emergency services');
+      }
       setError(null);
     } catch (err) {
       setError('Network error while fetching emergency services');
@@ -122,32 +78,39 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Mock implementation - in real app would call API
-      const newService: EmergencyService = {
-        _id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      const url = editingService 
+        ? `/api/emergency-services/${editingService.id}`
+        : '/api/emergency-services';
       
-      if (editingService) {
-        setServices(prev => prev.map(s => s._id === editingService._id ? { ...newService, _id: editingService._id } : s));
-      } else {
-        setServices(prev => [...prev, newService]);
-      }
+      const method = editingService ? 'PUT' : 'POST';
       
-      setShowAddForm(false);
-      setEditingService(null);
-      setFormData({
-        name: '',
-        phoneNumber: '',
-        serviceType: 'police',
-        address: '',
-        city: '',
-        state: '',
-        isActive: true,
-        availableHours: '24/7'
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
       });
+
+      if (response.ok) {
+        await fetchServices();
+        setShowAddForm(false);
+        setEditingService(null);
+        setFormData({
+          name: '',
+          phoneNumber: '',
+          serviceType: 'police',
+          address: '',
+          city: '',
+          state: '',
+          isActive: true,
+          availableHours: '24/7'
+        });
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save emergency service');
+      }
     } catch (err) {
       setError('Failed to save emergency service');
     }
@@ -156,8 +119,16 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
   const handleDelete = async (serviceId: string) => {
     if (window.confirm('Are you sure you want to delete this emergency service?')) {
       try {
-        // Mock implementation - in real app would call API
-        setServices(prev => prev.filter(s => s._id !== serviceId));
+        const response = await fetch(`/api/emergency-services/${serviceId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          await fetchServices();
+        } else {
+          setError('Failed to delete emergency service');
+        }
       } catch (err) {
         setError('Failed to delete emergency service');
       }
@@ -181,10 +152,23 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
 
   const toggleServiceStatus = async (serviceId: string) => {
     try {
-      // Mock implementation - in real app would call API
-      setServices(prev => prev.map(s => 
-        s._id === serviceId ? { ...s, isActive: !s.isActive } : s
-      ));
+      const service = services.find(s => s.id === serviceId);
+      if (!service) return;
+
+      const response = await fetch(`/api/emergency-services/${serviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: !service.isActive })
+      });
+
+      if (response.ok) {
+        await fetchServices();
+      } else {
+        setError('Failed to update service status');
+      }
     } catch (err) {
       setError('Failed to update service status');
     }
@@ -293,7 +277,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
       {/* Services Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 20 }}>
         {services.map((service) => (
-          <div key={service._id} style={{ 
+          <div key={service.id} style={{ 
             background:'rgba(15, 23, 42, 0.8)', 
             borderRadius:12, 
             border: '1px solid rgba(51, 65, 85, 0.3)',
@@ -330,7 +314,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
-                    onClick={() => toggleServiceStatus(service._id)}
+                    onClick={() => toggleServiceStatus(service.id)}
                     style={{ 
                       width: 12, 
                       height: 12, 
@@ -389,7 +373,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(service._id)}
+                  onClick={() => handleDelete(service.id)}
                   style={{ 
                     color: '#ef4444',
                     background: 'transparent',

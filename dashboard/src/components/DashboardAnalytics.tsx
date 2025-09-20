@@ -62,7 +62,7 @@ export function DashboardAnalytics({ token, incidents, connected }: DashboardAna
         ...prev,
         totalUsers: usersRes.data.length || 0,
         safeZones: safeZonesRes.data.length || 0,
-        emergencyContacts: contactsRes.data.length || 0
+        emergencyContacts: contactsRes.data.data?.contacts?.length || 0
       }));
     } catch (error) {
       console.error('Failed to load analytics:', error);

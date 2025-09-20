@@ -17,6 +17,23 @@ const contactSchema = z.object({
 
 const updateContactSchema = contactSchema.partial();
 
+// Helper function to transform MongoDB document to API format
+const transformContact = (contact: any) => {
+  if (!contact) return null;
+  const obj = contact.toObject ? contact.toObject() : contact;
+  return {
+    id: obj._id.toString(),
+    name: obj.name,
+    phone: obj.phone,
+    email: obj.email,
+    relationship: obj.relationship,
+    isPrimary: obj.isPrimary,
+    isActive: obj.isActive,
+    createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt
+  };
+};
+
 // Get all emergency contacts for user
 emergencyContactsRouter.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -24,7 +41,8 @@ emergencyContactsRouter.get('/', authMiddleware, async (req: AuthRequest, res) =
       userId: req.user!.id 
     }).sort({ isPrimary: -1, createdAt: -1 });
 
-    res.json({ contacts });
+    const transformedContacts = contacts.map(transformContact);
+    res.json({ contacts: transformedContacts });
   } catch (error) {
     console.error('Error fetching emergency contacts:', error);
     res.status(500).json({ error: 'Failed to fetch emergency contacts' });
@@ -71,7 +89,7 @@ emergencyContactsRouter.post('/', authMiddleware, async (req: AuthRequest, res) 
       isActive,
     });
 
-    res.status(201).json({ contact });
+    res.status(201).json({ contact: transformContact(contact) });
   } catch (error: any) {
     console.error('Error creating emergency contact:', error);
     if (error.code === 11000) {
@@ -120,7 +138,7 @@ emergencyContactsRouter.put('/:id', authMiddleware, async (req: AuthRequest, res
       return res.status(404).json({ error: 'Emergency contact not found' });
     }
 
-    res.json({ contact });
+    res.json({ contact: transformContact(contact) });
   } catch (error) {
     console.error('Error updating emergency contact:', error);
     res.status(500).json({ error: 'Failed to update emergency contact' });

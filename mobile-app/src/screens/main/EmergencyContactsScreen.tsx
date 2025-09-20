@@ -12,8 +12,11 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  Animated,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   EmergencyContact,
   getEmergencyContacts,
@@ -26,8 +29,14 @@ import {
   validatePhoneNumber,
   validateEmail,
 } from '../../services/contactsService';
+import { 
+  EmergencyService, 
+  emergencyServicesService 
+} from '../../services/emergencyServicesService';
 import { getCurrentLocation } from '../../services/locationService';
+import SafeAreaWrapper from '../../components/SafeAreaWrapper';
 import { colors, typography, spacing, borderRadius, shadows, commonStyles } from '../../utils/theme';
+import { wp, hp, normalize } from '../../utils/responsive';
 
 interface EmergencyContactsScreenProps {
   navigation: {
@@ -36,6 +45,10 @@ interface EmergencyContactsScreenProps {
 }
 
 export default function EmergencyContactsScreen({ navigation }: EmergencyContactsScreenProps) {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'contacts' | 'services'>('contacts');
+  
+  // Emergency Contacts state
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -49,9 +62,59 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
     isActive: true,
   });
 
+  // Emergency Services state
+  const [emergencyServices, setEmergencyServices] = useState<EmergencyService[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+
+  // Animation values
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(50))[0];
+  const scaleAnim = useState(new Animated.Value(0.9))[0];
+  const pulseAnim = useState(new Animated.Value(1))[0];
+
   useEffect(() => {
     loadContacts();
+    loadEmergencyServices();
+    
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Start pulse animation
+    startPulseAnimation();
   }, []);
+
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
 
   const loadContacts = async () => {
     try {
@@ -63,6 +126,19 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
       Alert.alert('Error', 'Failed to load emergency contacts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEmergencyServices = async () => {
+    try {
+      setServicesLoading(true);
+      const servicesList = await emergencyServicesService.getEmergencyServices();
+      setEmergencyServices(servicesList);
+    } catch (error) {
+      console.error('Failed to load emergency services:', error);
+      // Don't show alert for services, as it's not critical
+    } finally {
+      setServicesLoading(false);
     }
   };
 
@@ -266,67 +342,275 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Emergency Contacts</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionButton} onPress={handleShareLocation}>
-          <Ionicons name="location" size={24} color="#fff" />
-          <Text style={styles.quickActionText}>Share Location</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.quickActionButton, styles.panicButton]} 
-          onPress={() => handleEmergencyAlert('panic')}
+    <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        {/* Header - HomeScreen Style */}
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: pulseAnim }]
+            }
+          ]}
         >
-          <Ionicons name="warning" size={24} color="#fff" />
-          <Text style={styles.quickActionText}>Send Panic Alert</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.quickActionButton, styles.sosButton]} 
-          onPress={() => handleEmergencyAlert('sos')}
-        >
-          <Ionicons name="help-circle" size={24} color="#fff" />
-          <Text style={styles.quickActionText}>Send SOS</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Contacts List */}
-      <View style={styles.content}>
-        {contacts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#6b7280" />
-            <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
-            <Text style={styles.emptyDescription}>
-              Add emergency contacts to quickly share your location and send alerts in case of emergency
-            </Text>
+          <View style={styles.headerContent}>
             <TouchableOpacity 
-              style={styles.emptyButton} 
-              onPress={() => setModalVisible(true)}
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
             >
-              <Text style={styles.emptyButtonText}>Add First Contact</Text>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Animated.Text 
+                style={[
+                  styles.headerTitle,
+                  { transform: [{ scale: pulseAnim }] }
+                ]}
+              >
+                Emergency Contacts
+              </Animated.Text>
+              <Text style={styles.headerSubtitle}>Manage your emergency contacts</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.addButton} 
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
-        ) : (
-          <FlatList
-            data={contacts}
-            renderItem={renderContact}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
-          />
+        </Animated.View>
+
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'contacts' && styles.activeTab]}
+            onPress={() => setActiveTab('contacts')}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name="people" 
+              size={20} 
+              color={activeTab === 'contacts' ? colors.primary : colors.textSecondary} 
+            />
+            <Text style={[
+              styles.tabText, 
+              { color: activeTab === 'contacts' ? colors.primary : colors.textSecondary }
+            ]}>
+              My Contacts
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'services' && styles.activeTab]}
+            onPress={() => setActiveTab('services')}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name="medical" 
+              size={20} 
+              color={activeTab === 'services' ? colors.primary : colors.textSecondary} 
+            />
+            <Text style={[
+              styles.tabText, 
+              { color: activeTab === 'services' ? colors.primary : colors.textSecondary }
+            ]}>
+              Emergency Services
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Actions Cards - Only show for contacts tab */}
+        {activeTab === 'contacts' && (
+          <Animated.View 
+            style={[
+              styles.quickActionsContainer,
+              { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
+            ]}
+          >
+            <View style={styles.quickActionsGrid}>
+            <TouchableOpacity 
+              style={[styles.quickActionCard, { backgroundColor: colors.cardYellow }]} 
+              onPress={handleShareLocation}
+              activeOpacity={0.8}
+            >
+              <View style={styles.quickActionContent}>
+                <Ionicons name="location" size={24} color={colors.textInverse} />
+                <Text style={[styles.quickActionText, { color: colors.textInverse }]}>Share{'\n'}Location</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.quickActionCard, { backgroundColor: '#FF5722' }]} 
+              onPress={() => handleEmergencyAlert('panic')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.quickActionContent}>
+                <Ionicons name="warning" size={24} color="#ffffff" />
+                <Text style={[styles.quickActionText, { color: '#ffffff' }]}>Send{'\n'}Alert</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
         )}
-      </View>
+
+        {/* Content based on active tab */}
+        {activeTab === 'contacts' ? (
+          // Contacts List
+          <Animated.View 
+            style={[
+              styles.content,
+            { opacity: fadeAnim }
+          ]}
+        >
+          {contacts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <View style={styles.emptyIconBackground}>
+                  <Ionicons name="people-outline" size={48} color={colors.primary} />
+                </View>
+              </View>
+              <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
+              <Text style={styles.emptyDescription}>
+                Add emergency contacts to quickly share your location and send alerts in case of emergency
+              </Text>
+              <TouchableOpacity 
+                style={styles.emptyButton} 
+                onPress={() => setModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyButtonText}>Add First Contact</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={contacts}
+              renderItem={renderContact}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContainer}
+            />
+          )}
+        </Animated.View>
+        ) : (
+          // Emergency Services List
+          <View style={styles.content}>
+            {servicesLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading emergency services...</Text>
+              </View>
+            ) : emergencyServices.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <View style={styles.emptyIconBackground}>
+                    <Ionicons name="medical-outline" size={48} color={colors.primary} />
+                  </View>
+                </View>
+                <Text style={styles.emptyTitle}>No Emergency Services</Text>
+                <Text style={styles.emptyDescription}>
+                  No emergency services are currently available in your area.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView 
+                style={styles.servicesScrollView}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.servicesContainer}
+              >
+                {emergencyServices.map((service) => (
+                  <View key={service.id} style={styles.serviceCard}>
+                    <View style={styles.serviceHeader}>
+                      <View style={styles.serviceInfo}>
+                        <Text style={styles.serviceName}>{service.name}</Text>
+                        <Text style={styles.serviceType}>
+                          {service.serviceType.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.serviceStatus,
+                        { backgroundColor: service.isActive ? colors.success : colors.error }
+                      ]}>
+                        <Text style={styles.serviceStatusText}>
+                          {service.isActive ? 'Active' : 'Inactive'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.serviceDetails}>
+                      <View style={styles.serviceDetailRow}>
+                        <Ionicons name="call" size={16} color={colors.primary} />
+                        <Text style={styles.serviceDetailText}>{service.phoneNumber}</Text>
+                      </View>
+                      <View style={styles.serviceDetailRow}>
+                        <Ionicons name="time" size={16} color={colors.primary} />
+                        <Text style={styles.serviceDetailText}>{service.availableHours}</Text>
+                      </View>
+                      <View style={styles.serviceDetailRow}>
+                        <Ionicons name="location" size={16} color={colors.primary} />
+                        <Text style={styles.serviceDetailText}>{service.address}</Text>
+                      </View>
+                      {service.description && (
+                        <View style={styles.serviceDetailRow}>
+                          <Ionicons name="information-circle" size={16} color={colors.primary} />
+                          <Text style={styles.serviceDetailText}>{service.description}</Text>
+                        </View>
+                      )}
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={[
+                        styles.callServiceButton,
+                        { backgroundColor: service.isActive ? colors.primary : colors.textMuted }
+                      ]}
+                      onPress={() => {
+                        if (service.isActive) {
+                          Alert.alert(
+                            'Call Emergency Service',
+                            `Call ${service.name} at ${service.phoneNumber}?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Call',
+                                onPress: () => {
+                                  // Import Linking at the top of the file
+                                  const { Linking } = require('react-native');
+                                  Linking.openURL(`tel:${service.phoneNumber}`);
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      }}
+                      disabled={!service.isActive}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="call" size={20} color={service.isActive ? colors.textInverse : colors.text} />
+                      <Text style={[
+                        styles.callServiceButtonText,
+                        { color: service.isActive ? colors.textInverse : colors.text }
+                      ]}>
+                        Call {service.phoneNumber}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
 
       {/* Add/Edit Contact Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -427,7 +711,8 @@ export default function EmergencyContactsScreen({ navigation }: EmergencyContact
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </Animated.View>
+    </SafeAreaWrapper>
   );
 }
 
@@ -448,25 +733,88 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: {
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#1e2a33',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(51, 65, 85, 0.3)',
   },
-  backButton: {
-    padding: 8,
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
+    ...typography.heading2,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginTop: spacing.xs,
+  },
+  backButton: {
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
   },
   addButton: {
-    padding: 8,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+  },
+  quickActionsContainer: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  quickActionCard: {
+    flex: 1,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  quickActionContent: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  emptyIconContainer: {
+    width: wp(20),
+    height: wp(20),
+    borderRadius: wp(10),
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+  },
+  emptyIconBackground: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: wp(10),
+  },
+  emptyIconGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyButtonGradient: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
   },
   quickActions: {
     flexDirection: 'row',
@@ -497,56 +845,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#ea580c',
   },
   quickActionText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xl,
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   emptyDescription: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   emptyButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   emptyButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    textAlign: 'center',
   },
   listContainer: {
     paddingVertical: 16,
   },
   contactCard: {
     ...commonStyles.glassCardDark,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
   },
   contactHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   contactInfo: {
     flex: 1,
@@ -554,12 +911,12 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 4,
   },
   contactRelationship: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: colors.primary,
     marginBottom: 4,
   },
   contactPhone: {
@@ -696,6 +1053,115 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    margin: 16,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+  },
+  activeTabText: {
+    color: 'white',
+  },
+  // Emergency services styles
+  servicesScrollView: {
+    flex: 1,
+  },
+  servicesContainer: {
+    padding: 16,
+  },
+  serviceCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  serviceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  serviceInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  serviceName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  serviceType: {
+    fontSize: 14,
+    color: '#666',
+    textTransform: 'capitalize',
+  },
+  serviceStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#e8f5e8',
+  },
+  serviceStatusText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  serviceDetails: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+  },
+  serviceDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  serviceDetailText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+  },
+  callServiceButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  callServiceButtonText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

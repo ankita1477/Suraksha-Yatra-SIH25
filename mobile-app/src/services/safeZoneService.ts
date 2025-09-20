@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { api } from './api';
 
 export interface SafeZone {
   _id: string;
@@ -20,10 +21,11 @@ export interface SafetyStatus {
 
 class SafeZoneService {
   private static instance: SafeZoneService;
-  private baseUrl = 'http://192.168.31.36:4000/api';
   private safeZones: SafeZone[] = [];
   private lastKnownLocation: { lat: number; lng: number } | null = null;
   private safetyCheckInterval: NodeJS.Timeout | null = null;
+  private listeners: { onEnter?: (zones: SafeZone[]) => void; onExit?: () => void } = {};
+  private lastInside = false;
 
   static getInstance(): SafeZoneService {
     if (!SafeZoneService.instance) {
@@ -41,35 +43,10 @@ class SafeZoneService {
     }
   }
 
-  private async getAuthToken(): Promise<string | null> {
-    try {
-      return await AsyncStorage.getItem('authToken');
-    } catch (error) {
-      console.error('Failed to get auth token:', error);
-      return null;
-    }
-  }
-
   async fetchSafeZones(): Promise<SafeZone[]> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        throw new Error('No auth token available');
-      }
-
-      const response = await fetch(`${this.baseUrl}/safe-zones`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch safe zones');
-      }
-
-      const data = await response.json();
-      this.safeZones = data.safeZones || [];
+      const response = await api.get('/safe-zones');
+      this.safeZones = response.data.safeZones || [];
       return this.safeZones;
     } catch (error) {
       console.error('Error fetching safe zones:', error);
@@ -79,25 +56,12 @@ class SafeZoneService {
 
   async checkSafetyStatus(latitude: number, longitude: number): Promise<SafetyStatus | null> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        throw new Error('No auth token available');
-      }
-
-      const response = await fetch(`${this.baseUrl}/safe-zones/check`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ lat: latitude, lng: longitude })
+      const response = await api.post('/safe-zones/check', { 
+        lat: latitude, 
+        lng: longitude 
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to check safety status');
-      }
-
-      const safetyStatus = await response.json();
+      const safetyStatus = response.data;
       this.lastKnownLocation = { lat: latitude, lng: longitude };
       
       return safetyStatus;
@@ -198,8 +162,21 @@ class SafeZoneService {
     );
   }
 
+  setListeners(listeners: { onEnter?: (zones: SafeZone[]) => void; onExit?: () => void }): void {
+    this.listeners = listeners;
+  }
+
   updateLocation(latitude: number, longitude: number): void {
     this.lastKnownLocation = { lat: latitude, lng: longitude };
+    // Detect transition client-side without waiting for remote check
+    const currentZones = this.getCurrentSafeZones(latitude, longitude);
+    const inside = currentZones.length > 0;
+    if (!this.lastInside && inside && this.listeners.onEnter) {
+      this.listeners.onEnter(currentZones);
+    } else if (this.lastInside && !inside && this.listeners.onExit) {
+      this.listeners.onExit();
+    }
+    this.lastInside = inside;
   }
 
   stopMonitoring(): void {

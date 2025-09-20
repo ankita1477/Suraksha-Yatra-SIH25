@@ -1,77 +1,108 @@
 import { normalize, spacing } from './responsive';
 
-// Color palette - Dark Theme
+// Color palette - Dark Theme with Bright Cards
 export const colors = {
-  // Primary colors
-  primary: '#ff4d4f',
-  primaryDark: '#dc2626',
-  primaryLight: '#ff7875',
+  // Primary colors from design reference
+  primary: '#FF95DD', // Pink from image
+  primaryDark: '#E679C5',
+  primaryLight: '#FFB8E8',
   
-  // Background colors - Dark Theme
-  background: '#0d1117',
-  backgroundSecondary: '#161b22',
-  surface: '#21262d',
-  surfaceSecondary: '#30363d',
-  surfaceHighlight: 'rgba(56, 139, 253, 0.1)',
+  // Modern vibrant colors for cards
+  vibrantYellow: '#F8FF7F', // Yellow from image
+  vibrantPurple: '#87BEFE', // Light blue/purple from image
+  vibrantPink: '#FF95DD', // Pink from image
+  darkCharcoal: '#1F1F1F', // Dark from image
+  deepBlack: '#000000', // Pure black background like reference
+  
+  // Background colors - Dark Theme like reference image
+  background: '#000000', // Pure black like the reference
+  backgroundSecondary: '#1a1a1a',
+  surface: '#1F1F1F',
+  surfaceSecondary: '#2a2a2a',
+  surfaceHighlight: 'rgba(255, 149, 221, 0.1)',
   
   // Text colors - Dark Theme
-  text: '#f0f6fc',
-  textSecondary: '#8b949e',
-  textMuted: '#6e7681',
-  textInverse: '#24292f',
+  text: '#FFFFFF', // White text on dark background
+  textSecondary: '#B0B0B0', // Light gray for secondary text
+  textMuted: '#808080', // Muted gray
+  textInverse: '#000000', // Black text for light cards
   
-  // Status colors
-  success: '#238636',
-  successLight: '#2ea043',
-  warning: '#d29922',
-  warningLight: '#fb8500',
-  error: '#da3633',
-  errorLight: '#f85149',
+  // Status colors - Bright and vibrant
+  success: '#00E676', // Bright green
+  successLight: '#69F0AE',
+  warning: '#FFD600', // Bright yellow
+  warningLight: '#FFFF8D',
+  error: '#FF1744', // Bright red
+  errorLight: '#FF5983',
   
   // Border colors - Dark Theme
-  border: '#30363d',
-  borderLight: '#21262d',
-  borderAccent: '#388bfd26',
+  border: '#333333',
+  borderLight: '#2a2a2a',
+  borderAccent: 'rgba(255, 149, 221, 0.3)',
   
   // Special colors
   transparent: 'transparent',
-  overlay: 'rgba(0, 0, 0, 0.7)',
-  overlayLight: 'rgba(13, 17, 23, 0.8)',
+  overlay: 'rgba(0, 0, 0, 0.8)',
+  overlayLight: 'rgba(0, 0, 0, 0.6)',
   
-  // Gradient colors for dark theme
-  gradientPrimary: ['#1f2937', '#374151', '#4b5563'],
-  gradientSecondary: ['#7c3aed', '#8b5cf6', '#a78bfa'],
-  gradientSuccess: ['#059669', '#10b981', '#34d399'],
-  gradientWarning: ['#d97706', '#f59e0b', '#fbbf24'],
-  gradientError: ['#dc2626', '#ef4444', '#f87171'],
+  // Modern card colors (bright cards on dark background like reference)
+  cardPink: '#FF95DD',
+  cardYellow: '#F8FF7F',
+  cardPurple: '#87BEFE',
+  cardGreen: '#4ECDC4', // Added green card
+  cardOrange: '#FFB347', // Added orange card
+  cardDark: '#1F1F1F',
+  cardDeepDark: '#000000',
+  
+  // Remove old gradient colors and replace with solid modern colors
+  solidColors: {
+    vibrantPink: '#FF95DD',
+    brightYellow: '#F8FF7F', 
+    softBlue: '#87BEFE',
+    charcoalGray: '#1F1F1F',
+    deepGray: '#313131'
+  }
 };
 
-// Typography scale
+// Typography scale - Modern with better weights
 export const typography = {
   heading1: {
-    fontSize: normalize(28),
+    fontSize: normalize(32),
     fontWeight: '700' as const,
-    lineHeight: normalize(34),
+    lineHeight: normalize(40),
+    letterSpacing: -0.5,
   },
   heading2: {
-    fontSize: normalize(24),
-    fontWeight: '600' as const,
-    lineHeight: normalize(30),
+    fontSize: normalize(28),
+    fontWeight: '700' as const,
+    lineHeight: normalize(36),
+    letterSpacing: -0.25,
   },
   heading3: {
+    fontSize: normalize(24),
+    fontWeight: '600' as const,
+    lineHeight: normalize(32),
+    letterSpacing: -0.25,
+  },
+  heading4: {
     fontSize: normalize(20),
     fontWeight: '600' as const,
-    lineHeight: normalize(26),
+    lineHeight: normalize(28),
   },
   body: {
     fontSize: normalize(16),
     fontWeight: '400' as const,
-    lineHeight: normalize(22),
+    lineHeight: normalize(24),
   },
   bodyMedium: {
     fontSize: normalize(16),
     fontWeight: '500' as const,
-    lineHeight: normalize(22),
+    lineHeight: normalize(24),
+  },
+  bodyLarge: {
+    fontSize: normalize(18),
+    fontWeight: '400' as const,
+    lineHeight: normalize(26),
   },
   bodySmall: {
     fontSize: normalize(14),
@@ -80,13 +111,21 @@ export const typography = {
   },
   caption: {
     fontSize: normalize(12),
-    fontWeight: '400' as const,
+    fontWeight: '500' as const,
     lineHeight: normalize(16),
+    letterSpacing: 0.5,
   },
   button: {
     fontSize: normalize(16),
     fontWeight: '600' as const,
     lineHeight: normalize(20),
+    letterSpacing: 0.25,
+  },
+  label: {
+    fontSize: normalize(14),
+    fontWeight: '600' as const,
+    lineHeight: normalize(20),
+    letterSpacing: 0.25,
   },
 };
 

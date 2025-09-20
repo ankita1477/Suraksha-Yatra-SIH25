@@ -1,29 +1,24 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-from config import Config
 import logging
-import os
-from datetime import datetime
-
-# Import our ML modules
+from datetime import datetime, timedelta
+import numpy as np
+from database.mongodb_client import MongoDBClient
 from ml_models.risk_predictor import RiskPredictor
 from ml_models.anomaly_detector import AnomalyDetector
 from ml_models.pattern_analyzer import PatternAnalyzer
-from database.mongodb_client import DatabaseClient
+import config
 
 # Configure logging
-logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL))
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config.from_object(Config)
-CORS(app)
 
-# Initialize components
-db_client = DatabaseClient()
-risk_predictor = RiskPredictor()
-anomaly_detector = AnomalyDetector()
-pattern_analyzer = PatternAnalyzer()
+# Initialize services
+db_client = MongoDBClient()
+risk_predictor = RiskPredictor(db_client)
+anomaly_detector = AnomalyDetector(db_client)
+pattern_analyzer = PatternAnalyzer(db_client)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -31,197 +26,269 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
-        'service': 'ai-ml-service',
-        'version': '1.0.0'
+        'service': 'ai-ml-engine'
     })
 
-@app.route('/api/predict/route-risk', methods=['POST'])
+@app.route('/api/risk/predict', methods=['POST'])
 def predict_route_risk():
-    """Predict risk for a specific route"""
+    """
+    Predict route safety score based on historical data
+    Expected payload: {
+        "route": {
+            "start": {"lat": float, "lng": float},
+            "end": {"lat": float, "lng": float},
+            "waypoints": [{"lat": float, "lng": float}] (optional)
+        },
+        "time_of_day": "morning|afternoon|evening|night" (optional),
+        "user_id": string (optional)
+    }
+    """
     try:
         data = request.get_json()
         
-        # Validate input
-        required_fields = ['start_lat', 'start_lng', 'end_lat', 'end_lng']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
+        if not data or 'route' not in data:
+            return jsonify({'error': 'Route data is required'}), 400
         
-        # Get route risk prediction
+        route = data['route']
+        time_of_day = data.get('time_of_day', 'day')
+        user_id = data.get('user_id')
+        
+        # Validate route data
+        if not all(key in route for key in ['start', 'end']):
+            return jsonify({'error': 'Start and end coordinates are required'}), 400
+        
+        # Predict risk score
         risk_score = risk_predictor.predict_route_risk(
-            start_coords=(data['start_lat'], data['start_lng']),
-            end_coords=(data['end_lat'], data['end_lng']),
-            time_of_day=data.get('time_of_day'),
-            weather_conditions=data.get('weather_conditions')
+            route=route,
+            time_of_day=time_of_day,
+            user_id=user_id
         )
         
         return jsonify({
             'risk_score': risk_score,
-            'risk_level': risk_predictor.get_risk_level(risk_score),
-            'recommendations': risk_predictor.get_recommendations(risk_score),
+            'risk_level': _get_risk_level(risk_score),
+            'recommendations': _get_risk_recommendations(risk_score),
             'timestamp': datetime.utcnow().isoformat()
         })
         
     except Exception as e:
-        logger.error(f"Error predicting route risk: {str(e)}")
+        logger.error(f"Error in route risk prediction: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/predict/area-risk', methods=['POST'])
-def predict_area_risk():
-    """Get risk score for a specific area"""
+@app.route('/api/anomaly/detect', methods=['POST'])
+def detect_anomaly():
+    """
+    Detect unusual movement patterns
+    Expected payload: {
+        "user_id": string,
+        "location_data": [
+            {
+                "lat": float,
+                "lng": float,
+                "timestamp": "ISO string",
+                "speed": float (optional),
+                "accuracy": float (optional)
+            }
+        ]
+    }
+    """
     try:
         data = request.get_json()
         
-        if 'latitude' not in data or 'longitude' not in data:
-            return jsonify({'error': 'Latitude and longitude required'}), 400
+        if not data or 'user_id' not in data or 'location_data' not in data:
+            return jsonify({'error': 'User ID and location data are required'}), 400
         
-        risk_data = risk_predictor.predict_area_risk(
-            latitude=data['latitude'],
-            longitude=data['longitude'],
-            radius=data.get('radius', 1000)  # Default 1km radius
+        user_id = data['user_id']
+        location_data = data['location_data']
+        
+        if not location_data or len(location_data) < 2:
+            return jsonify({'error': 'At least 2 location points are required'}), 400
+        
+        # Detect anomalies
+        anomaly_result = anomaly_detector.detect_anomalies(
+            user_id=user_id,
+            location_data=location_data
         )
-        
-        return jsonify(risk_data)
-        
-    except Exception as e:
-        logger.error(f"Error predicting area risk: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/detect/movement-anomaly', methods=['POST'])
-def detect_movement_anomaly():
-    """Detect unusual movement patterns"""
-    try:
-        data = request.get_json()
-        
-        required_fields = ['user_id', 'locations']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
-        
-        anomaly_result = anomaly_detector.detect_movement_anomaly(
-            user_id=data['user_id'],
-            locations=data['locations']
-        )
-        
-        return jsonify(anomaly_result)
-        
-    except Exception as e:
-        logger.error(f"Error detecting movement anomaly: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/detect/speed-anomaly', methods=['POST'])
-def detect_speed_anomaly():
-    """Detect speed anomalies"""
-    try:
-        data = request.get_json()
-        
-        required_fields = ['user_id', 'speed', 'location']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
-        
-        anomaly_result = anomaly_detector.detect_speed_anomaly(
-            user_id=data['user_id'],
-            current_speed=data['speed'],
-            location=data['location'],
-            context=data.get('context', {})
-        )
-        
-        return jsonify(anomaly_result)
-        
-    except Exception as e:
-        logger.error(f"Error detecting speed anomaly: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/analytics/trends', methods=['GET'])
-def get_trends():
-    """Get incident trends and patterns"""
-    try:
-        time_range = request.args.get('time_range', '7d')  # Default 7 days
-        location = request.args.get('location')
-        
-        trends = pattern_analyzer.analyze_trends(
-            time_range=time_range,
-            location=location
-        )
-        
-        return jsonify(trends)
-        
-    except Exception as e:
-        logger.error(f"Error getting trends: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/models/status', methods=['GET'])
-def get_model_status():
-    """Get model training status and metrics"""
-    try:
-        status = {
-            'risk_predictor': risk_predictor.get_status(),
-            'anomaly_detector': anomaly_detector.get_status(),
-            'pattern_analyzer': pattern_analyzer.get_status(),
-            'last_updated': datetime.utcnow().isoformat()
-        }
-        
-        return jsonify(status)
-        
-    except Exception as e:
-        logger.error(f"Error getting model status: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/models/retrain', methods=['POST'])
-def retrain_models():
-    """Trigger model retraining"""
-    try:
-        model_type = request.json.get('model_type', 'all')
-        
-        if model_type in ['all', 'risk_predictor']:
-            risk_predictor.retrain()
-        
-        if model_type in ['all', 'anomaly_detector']:
-            anomaly_detector.retrain()
-        
-        if model_type in ['all', 'pattern_analyzer']:
-            pattern_analyzer.retrain()
         
         return jsonify({
-            'message': f'Retraining initiated for {model_type}',
+            'is_anomaly': anomaly_result['is_anomaly'],
+            'confidence_score': anomaly_result['confidence'],
+            'anomaly_type': anomaly_result.get('type'),
+            'details': anomaly_result.get('details'),
             'timestamp': datetime.utcnow().isoformat()
         })
         
     except Exception as e:
-        logger.error(f"Error retraining models: {str(e)}")
+        logger.error(f"Error in anomaly detection: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/emergency/optimize-response', methods=['POST'])
-def optimize_emergency_response():
-    """AI-powered emergency response optimization"""
+@app.route('/api/patterns/analyze', methods=['POST'])
+def analyze_patterns():
+    """
+    Analyze incident patterns and identify hotspots
+    Expected payload: {
+        "area": {
+            "center": {"lat": float, "lng": float},
+            "radius_km": float
+        },
+        "time_range": {
+            "start": "ISO string",
+            "end": "ISO string"
+        },
+        "incident_types": ["accident", "crime", "medical"] (optional)
+    }
+    """
     try:
         data = request.get_json()
         
-        required_fields = ['incident_location', 'incident_type', 'severity']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
+        if not data or 'area' not in data:
+            return jsonify({'error': 'Area data is required'}), 400
         
-        optimization = risk_predictor.optimize_emergency_response(
-            incident_location=data['incident_location'],
-            incident_type=data['incident_type'],
-            severity=data['severity'],
-            available_resources=data.get('available_resources', [])
+        area = data['area']
+        time_range = data.get('time_range', {
+            'start': (datetime.utcnow() - timedelta(days=30)).isoformat(),
+            'end': datetime.utcnow().isoformat()
+        })
+        incident_types = data.get('incident_types')
+        
+        # Analyze patterns
+        pattern_result = pattern_analyzer.analyze_patterns(
+            area=area,
+            time_range=time_range,
+            incident_types=incident_types
         )
         
-        return jsonify(optimization)
+        return jsonify({
+            'hotspots': pattern_result['hotspots'],
+            'trends': pattern_result['trends'],
+            'risk_zones': pattern_result['risk_zones'],
+            'insights': pattern_result['insights'],
+            'timestamp': datetime.utcnow().isoformat()
+        })
         
     except Exception as e:
-        logger.error(f"Error optimizing emergency response: {str(e)}")
+        logger.error(f"Error in pattern analysis: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/threat/assess', methods=['POST'])
+def assess_threat():
+    """
+    Assess threat level for a specific location and time
+    Expected payload: {
+        "location": {"lat": float, "lng": float},
+        "user_profile": {
+            "age_group": "young|adult|senior" (optional),
+            "gender": "male|female|other" (optional),
+            "travel_mode": "walking|driving|public_transport" (optional)
+        },
+        "context": {
+            "time_of_day": "morning|afternoon|evening|night",
+            "day_of_week": "monday|tuesday|..." (optional),
+            "weather": "clear|rainy|foggy" (optional)
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'location' not in data:
+            return jsonify({'error': 'Location data is required'}), 400
+        
+        location = data['location']
+        user_profile = data.get('user_profile', {})
+        context = data.get('context', {})
+        
+        # Assess threat level
+        threat_assessment = _assess_threat_level(
+            location=location,
+            user_profile=user_profile,
+            context=context
+        )
+        
+        return jsonify({
+            'threat_level': threat_assessment['level'],
+            'threat_score': threat_assessment['score'],
+            'contributing_factors': threat_assessment['factors'],
+            'recommendations': threat_assessment['recommendations'],
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in threat assessment: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def _get_risk_level(score):
+    """Convert numeric risk score to categorical level"""
+    if score < 25:
+        return 'low'
+    elif score < 50:
+        return 'moderate'
+    elif score < 75:
+        return 'high'
+    else:
+        return 'critical'
+
+def _get_risk_recommendations(score):
+    """Get safety recommendations based on risk score"""
+    if score < 25:
+        return ['Maintain normal safety awareness', 'Keep emergency contacts updated']
+    elif score < 50:
+        return ['Stay alert', 'Share your location with trusted contacts', 'Avoid isolated areas']
+    elif score < 75:
+        return ['Consider alternative routes', 'Travel in groups if possible', 'Inform others of your plans']
+    else:
+        return ['Strongly consider avoiding this route', 'Use alternative transportation', 'Contact local authorities if necessary']
+
+def _assess_threat_level(location, user_profile, context):
+    """
+    Basic threat level assessment combining multiple factors
+    This is a simplified MVP implementation
+    """
+    base_score = 20  # Base threat score
+    factors = []
+    
+    # Time-based risk factors
+    time_of_day = context.get('time_of_day', 'day')
+    if time_of_day in ['night', 'late_evening']:
+        base_score += 15
+        factors.append('Late hour increases risk')
+    elif time_of_day == 'evening':
+        base_score += 8
+        factors.append('Evening hours have moderate risk')
+    
+    # Weather-based factors
+    weather = context.get('weather')
+    if weather in ['rainy', 'foggy']:
+        base_score += 10
+        factors.append('Poor weather conditions')
+    
+    # Get historical incident data for the location
+    # This would integrate with the pattern analyzer
+    
+    # Determine level
+    if base_score < 30:
+        level = 'low'
+        recommendations = ['Normal safety precautions']
+    elif base_score < 50:
+        level = 'moderate'
+        recommendations = ['Increased awareness recommended', 'Share location with contacts']
+    elif base_score < 70:
+        level = 'high'
+        recommendations = ['Exercise caution', 'Consider alternative routes']
+    else:
+        level = 'critical'
+        recommendations = ['Avoid area if possible', 'Contact emergency services if in danger']
+    
+    return {
+        'level': level,
+        'score': min(100, base_score),
+        'factors': factors,
+        'recommendations': recommendations
+    }
+
 if __name__ == '__main__':
-    # Create models directory if it doesn't exist
-    os.makedirs(Config.MODEL_PATH, exist_ok=True)
-    
-    logger.info("Starting AI/ML Service...")
-    logger.info(f"Model path: {Config.MODEL_PATH}")
-    logger.info(f"Database URL: {Config.DATABASE_URL}")
-    
     app.run(
-        host=Config.API_HOST,
-        port=Config.API_PORT,
-        debug=(Config.FLASK_ENV == 'development')
+        host=config.AI_HOST,
+        port=config.AI_PORT,
+        debug=config.DEBUG
     )

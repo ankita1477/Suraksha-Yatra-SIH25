@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 interface EmergencyContact {
-  _id: string;
+  id: string;
   name: string;
-  phoneNumber: string;
+  phone: string;
+  email?: string;
   relationship: string;
   isPrimary: boolean;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,7 +25,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
 
   const [formData, setFormData] = useState({
     name: '',
-    phoneNumber: '',
+    phone: '',
     relationship: '',
     isPrimary: false
   });
@@ -37,7 +39,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
       
       if (response.ok) {
         const data = await response.json();
-        setContacts(data.emergencyContacts || []);
+        setContacts(data.contacts || []);
       } else {
         setError('Failed to fetch emergency contacts');
       }
@@ -59,7 +61,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
     
     try {
       const url = editingContact 
-        ? `/api/emergency-contacts/${editingContact._id}`
+        ? `/api/emergency-contacts/${editingContact.id}`
         : '/api/emergency-contacts';
       
       const method = editingContact ? 'PUT' : 'POST';
@@ -77,7 +79,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
         await fetchContacts();
         setShowAddForm(false);
         setEditingContact(null);
-        setFormData({ name: '', phoneNumber: '', relationship: '', isPrimary: false });
+        setFormData({ name: '', phone: '', relationship: '', isPrimary: false });
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to save contact');
@@ -112,7 +114,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
     setEditingContact(contact);
     setFormData({
       name: contact.name,
-      phoneNumber: contact.phoneNumber,
+      phone: contact.phone,
       relationship: contact.relationship,
       isPrimary: contact.isPrimary
     });
@@ -139,7 +141,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
   const cancelForm = () => {
     setShowAddForm(false);
     setEditingContact(null);
-    setFormData({ name: '', phoneNumber: '', relationship: '', isPrimary: false });
+    setFormData({ name: '', phone: '', relationship: '', isPrimary: false });
   };
 
   return (
@@ -199,8 +201,8 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   required
                   className="w-full p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   placeholder="+1234567890"
@@ -273,7 +275,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
       ) : (
         <div className="space-y-3">
           {contacts.map((contact) => (
-            <div key={contact._id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-600/20">
+            <div key={contact.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-600/20">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -285,14 +287,14 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
                     )}
                   </div>
                   <div className="text-sm text-slate-400 space-y-1">
-                    <p>📞 {contact.phoneNumber}</p>
+                    <p>📞 {contact.phone}</p>
                     <p>👥 {contact.relationship}</p>
                     <p className="text-xs">Added {new Date(contact.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleTestContact(contact._id)}
+                    onClick={() => handleTestContact(contact.id)}
                     className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs hover:bg-green-600/30 transition-colors"
                   >
                     Test
@@ -304,7 +306,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(contact._id)}
+                    onClick={() => handleDelete(contact.id)}
                     className="px-3 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/30 transition-colors"
                   >
                     Delete

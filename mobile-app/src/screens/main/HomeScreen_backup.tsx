@@ -15,6 +15,7 @@ import {
   isLocationTrackingActive,
   getLocationStatus 
 } from '../../services/locationService';
+import AISimpleStatus from '../../components/AISimpleStatus';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -33,9 +34,6 @@ export default function HomeScreen({ navigation }: Props) {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
   const scaleAnim = useState(new Animated.Value(0.9))[0];
-  const pulseAnim = useState(new Animated.Value(1))[0];
-  const emergencyPulse = useState(new Animated.Value(1))[0];
-  const aiStatusAnim = useState(new Animated.Value(0))[0];
 
   // Get current time for greeting
   const getGreeting = () => {
@@ -43,59 +41,6 @@ export default function HomeScreen({ navigation }: Props) {
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
-  };
-
-  // Animation functions
-  const startPulseAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  const startEmergencyPulse = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(emergencyPulse, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emergencyPulse, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  const handleCardPress = (navigation: any, route: string) => {
-    // Create a bounce animation for feedback
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      navigation.navigate(route);
-    });
   };
 
   useEffect(() => {
@@ -140,16 +85,7 @@ export default function HomeScreen({ navigation }: Props) {
         duration: 600,
         useNativeDriver: true,
       }),
-      Animated.timing(aiStatusAnim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
     ]).start();
-
-    // Start continuous animations
-    startPulseAnimation();
-    startEmergencyPulse();
 
     // Listen for real-time alerts
     const handlePanicAlert = (data: any) => {
@@ -271,236 +207,66 @@ export default function HomeScreen({ navigation }: Props) {
         bounces={true}
       >
         {/* Header Section */}
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
+        <View style={styles.header}>
           <View style={styles.greetingContainer}>
-            <Animated.Text 
-              style={[
-                styles.greetingTitle,
-                { transform: [{ scale: pulseAnim }] }
-              ]}
-            >
-              Welcome back,
-            </Animated.Text>
+            <Text style={styles.greetingTitle}>Welcome back,</Text>
             <Text style={styles.userName}>
               {user?.email?.split('@')[0] || 'Traveler'} 👋
             </Text>
           </View>
           
-          {/* AI Safety Guard - Small Header Version */}
-          <Animated.View 
-            style={[
-              styles.aiStatusHeader,
-              {
-                opacity: aiStatusAnim,
-                transform: [{ scale: aiStatusAnim }]
-              }
-            ]}
-          >
-            <TouchableOpacity 
-              style={styles.aiStatusContainer}
-              activeOpacity={0.8}
-              onPress={() => {
-                Alert.alert(
-                  'AI Safety Guard',
-                  'AI is continuously monitoring your area for potential risks and keeping you safe.',
-                  [{ text: 'OK' }]
-                );
-              }}
-            >
-              <View style={styles.aiIconContainer}>
-                <Animated.View style={{ transform: [{ rotate: pulseAnim.interpolate({
-                  inputRange: [1, 1.05],
-                  outputRange: ['0deg', '5deg']
-                }) }] }}>
-                  <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
-                </Animated.View>
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInput}>
+              <Text style={styles.searchPlaceholder}>Search safety features...</Text>
+              <View style={styles.searchIcon}>
+                <Ionicons name="search" size={20} color={colors.textInverse} />
               </View>
-              <View style={styles.aiStatusText}>
-                <Text style={styles.aiStatusTitle}>AI Safety Guard</Text>
-                <Text style={styles.aiStatusSubtitle}>
-                  {currentLocation ? 'Monitoring your area' : 'Waiting for location'}
-                </Text>
-              </View>
-              <View style={styles.aiStatusIndicator}>
-                <Animated.View 
-                  style={[
-                    styles.statusDot, 
-                    { 
-                      backgroundColor: currentLocation ? '#4CAF50' : '#FFC107',
-                      transform: [{ scale: pulseAnim }]
-                    }
-                  ]} 
-                />
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
+            </View>
+          </View>
+        </View>
 
-        {/* Emergency Button Circle */}
-        <Animated.View 
-          style={[
-            styles.emergencyButtonContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
-        >
-          <TouchableOpacity 
-            style={[
-              styles.emergencyButton,
-              {
-                transform: [{ scale: emergencyPulse }]
-              }
-            ]}
-            onPress={() => {
-              // Haptic feedback
-              Animated.sequence([
-                Animated.timing(emergencyPulse, {
-                  toValue: 0.9,
-                  duration: 100,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(emergencyPulse, {
-                  toValue: 1.1,
-                  duration: 100,
-                  useNativeDriver: true,
-                }),
-              ]).start(() => {
-                navigation.navigate('Panic');
-              });
-            }}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={{ transform: [{ rotate: emergencyPulse.interpolate({
-              inputRange: [1, 1.1],
-              outputRange: ['0deg', '10deg']
-            }) }] }}>
-              <Ionicons name="warning" size={40} color="white" />
-            </Animated.View>
-            <Text style={styles.emergencyButtonText}>EMERGENCY</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* All Action Cards Grid */}
-        <Animated.View 
-          style={[
-            styles.cardsGrid,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
+        {/* Colorful Action Cards Grid (like reference image) */}
+        <View style={styles.cardsGrid}>
           <View style={styles.cardRow}>
             <TouchableOpacity 
               style={[styles.modernActionCard, { backgroundColor: colors.cardPink }]}
-              onPress={() => handleCardPress(navigation, 'EmergencyContacts')}
-              activeOpacity={0.7}
+              onPress={() => navigation.navigate('EmergencyContacts')}
             >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ rotate: pulseAnim.interpolate({
-                  inputRange: [1, 1.05],
-                  outputRange: ['0deg', '5deg']
-                }) }] }}>
-                  <Ionicons name="people" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Emergency{'\n'}contacts</Text>
-              </View>
+              <Text style={styles.cardTitle}>Emergency{'\n'}contacts</Text>
               <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.modernActionCard, { backgroundColor: colors.cardYellow }]}
-              onPress={() => handleCardPress(navigation, 'Map')}
-              activeOpacity={0.7}
+              onPress={() => navigation.navigate('Map')}
             >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                  <Ionicons name="shield-checkmark" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Safe zone{'\n'}finder</Text>
-              </View>
+              <Text style={styles.cardTitle}>Safe zone{'\n'}finder</Text>
               <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
             </TouchableOpacity>
           </View>
           
-          <View style={styles.cardRow}>
-            <TouchableOpacity 
-              style={[styles.modernActionCard, { backgroundColor: colors.cardPurple }]}
-              onPress={() => handleCardPress(navigation, 'Panic')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ rotate: emergencyPulse.interpolate({
-                  inputRange: [1, 1.1],
-                  outputRange: ['0deg', '15deg']
-                }) }] }}>
-                  <Ionicons name="alert-circle" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Panic{'\n'}alert</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.modernActionCard, { backgroundColor: '#4CAF50' }]}
-              onPress={() => handleCardPress(navigation, 'Map')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                  <Ionicons name="map" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Safety{'\n'}map</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.cardRow}>
-            <TouchableOpacity 
-              style={[styles.modernActionCard, { backgroundColor: '#FF5722' }]}
-              onPress={() => handleCardPress(navigation, 'Panic')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ rotate: emergencyPulse.interpolate({
-                  inputRange: [1, 1.1],
-                  outputRange: ['0deg', '-10deg']
-                }) }] }}>
-                  <Ionicons name="warning" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Emergency{'\n'}alert</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.modernActionCard, { backgroundColor: '#607D8B' }]}
-              onPress={() => handleCardPress(navigation, 'NotificationSettings')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardContent}>
-                <Animated.View style={{ transform: [{ rotate: pulseAnim.interpolate({
-                  inputRange: [1, 1.05],
-                  outputRange: ['0deg', '360deg']
-                }) }] }}>
-                  <Ionicons name="settings" size={24} color={colors.textInverse} />
-                </Animated.View>
-                <Text style={styles.cardTitle}>Settings</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={[styles.modernActionCard, styles.wideCard, { backgroundColor: colors.cardPurple }]}
+            onPress={() => navigation.navigate('Panic')}
+          >
+            <Text style={styles.cardTitle}>Panic alert</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
+          </TouchableOpacity>
+        </View>
+
+        {/* AI Safety Status */}
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <AISimpleStatus 
+            currentLocation={currentLocation || undefined} 
+            onViewDetails={() => {
+              // Simple alert for now
+              Alert.alert(
+                'AI Safety Guard',
+                'AI is continuously monitoring your area for potential risks and keeping you safe.',
+                [{ text: 'OK' }]
+              );
+            }}
+          />
         </Animated.View>
 
         {/* Alert Banner */}
@@ -518,7 +284,174 @@ export default function HomeScreen({ navigation }: Props) {
           </Animated.View>
         )}
 
+        {/* Main Action Cards */}
+        <View style={styles.cardsGrid}>
+          <TouchableOpacity 
+            style={[styles.modernActionCard, styles.wideCard, { backgroundColor: colors.cardPurple }]}
+            onPress={() => navigation.navigate('Map')}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Safe Map</Text>
+              <Text style={styles.cardSubtitle}>Find safe zones nearby</Text>
+            </View>
+            <Ionicons name="map" size={24} color={colors.textInverse} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.modernActionCard, styles.wideCard, { backgroundColor: colors.cardPink }]}
+            onPress={() => navigation.navigate('Panic')}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Emergency Alert</Text>
+              <Text style={styles.cardSubtitle}>Quick panic button</Text>
+            </View>
+            <Ionicons name="warning" size={24} color={colors.textInverse} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.modernActionCard, styles.wideCard, { backgroundColor: colors.cardYellow }]}
+            onPress={() => navigation.navigate('EmergencyContacts')}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Settings</Text>
+              <Text style={styles.cardSubtitle}>Emergency contacts & more</Text>
+            </View>
+            <Ionicons name="settings" size={24} color={colors.textInverse} />
+          </TouchableOpacity>
+        </View>
 
+        {/* Logout Button */}
+        <Animated.View 
+          style={[
+            styles.actionsSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <View style={styles.primaryActions}>
+            {/* Emergency Button - Large */}
+            <TouchableOpacity 
+              style={styles.emergencyCard}
+              onPress={() => navigation.navigate('Panic')}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#ff4757', '#c44569']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.emergencyGradient}
+              >
+                <Ionicons name="warning" size={32} color="white" />
+                <Text style={styles.emergencyText}>EMERGENCY</Text>
+                <Text style={styles.emergencySubtext}>Tap for immediate help</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Location Toggle */}
+            <TouchableOpacity 
+              style={styles.locationCard}
+              onPress={toggleLocationTracking}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={locationStatus.isTracking 
+                  ? ['#5f27cd', '#341f97'] 
+                  : ['#636e72', '#2d3436']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.locationGradient}
+              >
+                <Ionicons 
+                  name={locationStatus.isTracking ? "location" : "location-outline"} 
+                  size={28} 
+                  color="white" 
+                />
+                <Text style={styles.locationText}>
+                  {locationStatus.isTracking ? 'Stop Tracking' : 'Start Tracking'}
+                </Text>
+                <Text style={styles.locationSubtext}>
+                  {locationStatus.isTracking ? 'Location active' : 'Enable safety tracking'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* Secondary Actions Grid */}
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('Map')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionIconContainer}>
+                <LinearGradient
+                  colors={['#00b894', '#00a085']}
+                  style={styles.actionIconGradient}
+                >
+                  <Ionicons name="map" size={24} color="white" />
+                </LinearGradient>
+              </View>
+              <Text style={styles.actionTitle}>Safety Map</Text>
+              <Text style={styles.actionSubtitle}>View incidents & safe zones</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('EmergencyContacts')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionIconContainer}>
+                <LinearGradient
+                  colors={['#0984e3', '#0662c7']}
+                  style={styles.actionIconGradient}
+                >
+                  <Ionicons name="people" size={24} color="white" />
+                </LinearGradient>
+              </View>
+              <Text style={styles.actionTitle}>Contacts</Text>
+              <Text style={styles.actionSubtitle}>Manage emergency contacts</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={handleEmergencyTest}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionIconContainer}>
+                <LinearGradient
+                  colors={['#fdcb6e', '#e17055']}
+                  style={styles.actionIconGradient}
+                >
+                  <Ionicons name="flask" size={24} color="white" />
+                </LinearGradient>
+              </View>
+              <Text style={styles.actionTitle}>Test Alert</Text>
+              <Text style={styles.actionSubtitle}>Test emergency system</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('NotificationSettings')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionIconContainer}>
+                <LinearGradient
+                  colors={['#a29bfe', '#6c5ce7']}
+                  style={styles.actionIconGradient}
+                >
+                  <Ionicons name="notifications" size={24} color="white" />
+                </LinearGradient>
+              </View>
+              <Text style={styles.actionTitle}>Settings</Text>
+              <Text style={styles.actionSubtitle}>Configure notifications</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
 
         {/* Safety Tips Section */}
         <Animated.View 
@@ -587,6 +520,12 @@ const styles = StyleSheet.create({
     ...typography.bodyLarge,
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: spacing.xs,
+  },
+  userName: {
+    ...typography.heading2,
+    color: 'white',
+    fontWeight: '700',
+    textAlign: 'center',
   },
   heroStats: {
     flexDirection: 'row',
@@ -797,11 +736,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Dark Theme Header Styles
+  // Dark Theme Header Styles (like reference image)
   header: {
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  timeText: {
+    ...typography.bodyMedium,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  premiumButton: {
+    backgroundColor: colors.cardPurple,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  premiumText: {
+    ...typography.caption,
+    color: colors.textInverse,
+    fontWeight: '600',
   },
   greetingTitle: {
     ...typography.heading1,
@@ -809,55 +770,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: normalize(38),
   },
-  userName: {
-    ...typography.heading2,
-    color: colors.text,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  
-  // AI Status in Header
-  aiStatusHeader: {
+  searchContainer: {
     marginTop: spacing.lg,
   },
-  aiStatusContainer: {
+  searchInput: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.2)',
+    paddingVertical: spacing.md,
   },
-  aiIconContainer: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    borderRadius: borderRadius.md,
-    padding: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  aiStatusText: {
+  searchPlaceholder: {
+    ...typography.bodyMedium,
+    color: colors.textSecondary,
     flex: 1,
   },
-  aiStatusTitle: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
+  searchIcon: {
+    backgroundColor: colors.cardYellow,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
   },
-  aiStatusSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  aiStatusIndicator: {
-    marginLeft: spacing.sm,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  
   alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -866,7 +799,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
 
-  // Modern Card Grid Styles
+  // Modern Card Grid Styles (like reference image)
   cardsGrid: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -890,9 +823,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  cardContent: {
-    alignItems: 'flex-start',
-  },
   wideCard: {
     marginHorizontal: 0,
     flexDirection: 'row',
@@ -904,38 +834,5 @@ const styles = StyleSheet.create({
     color: colors.textInverse,
     fontWeight: '600',
     lineHeight: 20,
-  },
-  cardSubtitle: {
-    ...typography.bodySmall,
-    color: 'rgba(0, 0, 0, 0.7)',
-    fontWeight: '400',
-    marginTop: 2,
-  },
-
-  // Emergency Button Circle Styles
-  emergencyButtonContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
-  emergencyButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#FF4757',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#FF4757',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  emergencyButtonText: {
-    ...typography.caption,
-    color: '#fff',
-    fontWeight: '700',
-    marginTop: spacing.xs,
-    textAlign: 'center',
   },
 });

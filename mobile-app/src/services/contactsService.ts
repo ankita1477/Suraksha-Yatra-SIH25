@@ -23,7 +23,7 @@ interface LocationData {
 export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
   try {
     // Try to fetch from backend first
-    const response = await api.get('/user/emergency-contacts');
+    const response = await api.get('/emergency-contacts');
     const contacts = response.data.contacts || [];
     
     // Cache locally
@@ -38,17 +38,12 @@ export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
 }
 
 export async function saveEmergencyContact(contact: Omit<EmergencyContact, 'id'>): Promise<EmergencyContact> {
-  const newContact: EmergencyContact = {
-    ...contact,
-    id: Date.now().toString(), // Simple ID generation
-  };
-
   try {
-    // Save to backend
-    const response = await api.post('/user/emergency-contacts', newContact);
-    const savedContact = response.data.contact || newContact;
+    // Save to backend - let backend generate the ID
+    const response = await api.post('/emergency-contacts', contact);
+    const savedContact = response.data.contact;
     
-    // Update local cache
+    // Update local cache with the saved contact
     const contacts = await getEmergencyContacts();
     const updatedContacts = [...contacts, savedContact];
     await setItem('emergency_contacts', JSON.stringify(updatedContacts));
@@ -56,6 +51,12 @@ export async function saveEmergencyContact(contact: Omit<EmergencyContact, 'id'>
     return savedContact;
   } catch (error) {
     console.warn('Failed to save contact to backend, saving locally:', error);
+    
+    // Fallback: create local contact with temporary ID
+    const newContact: EmergencyContact = {
+      ...contact,
+      id: Date.now().toString(), // Temporary ID for local storage
+    };
     
     // Save locally as fallback
     const contacts = await getEmergencyContacts();
@@ -69,7 +70,7 @@ export async function saveEmergencyContact(contact: Omit<EmergencyContact, 'id'>
 export async function updateEmergencyContact(contactId: string, updates: Partial<EmergencyContact>): Promise<EmergencyContact | null> {
   try {
     // Update on backend
-    const response = await api.put(`/user/emergency-contacts/${contactId}`, updates);
+    const response = await api.put(`/emergency-contacts/${contactId}`, updates);
     const updatedContact = response.data.contact;
     
     // Update local cache
@@ -98,7 +99,7 @@ export async function updateEmergencyContact(contactId: string, updates: Partial
 export async function deleteEmergencyContact(contactId: string): Promise<boolean> {
   try {
     // Delete from backend
-    await api.delete(`/user/emergency-contacts/${contactId}`);
+    await api.delete(`/emergency-contacts/${contactId}`);
     
     // Update local cache
     const contacts = await getEmergencyContacts();

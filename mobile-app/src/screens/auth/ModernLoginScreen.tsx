@@ -195,8 +195,6 @@ export default function LoginScreen({ navigation }: Props) {
             style={[
               styles.floatingParticle,
               {
-                backgroundColor: index % 3 === 0 ? colors.vibrantYellow : 
-                                index % 3 === 1 ? colors.vibrantPurple : colors.vibrantPink,
                 transform: [
                   { translateX: particle.x },
                   { translateY: particle.y },
@@ -232,7 +230,7 @@ export default function LoginScreen({ navigation }: Props) {
               {/* Logo and Title Section */}
               <View style={styles.headerSection}>
                 <LinearGradient
-                  colors={[colors.vibrantPink, colors.vibrantPurple]}
+                  colors={[colors.primary, colors.vibrantPurple]}
                   style={styles.logoContainer}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -252,7 +250,7 @@ export default function LoginScreen({ navigation }: Props) {
               {/* Form Card */}
               <View style={styles.formCard}>
                 <LinearGradient
-                  colors={['rgba(248, 255, 127, 0.1)', 'rgba(135, 190, 254, 0.1)']}
+                  colors={['rgba(255, 149, 221, 0.1)', 'rgba(135, 190, 254, 0.1)']}
                   style={styles.formGradient}
                 >
                   {/* Mode Toggle */}
@@ -295,7 +293,7 @@ export default function LoginScreen({ navigation }: Props) {
                       {
                         borderColor: inputFocusAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [colors.border, colors.vibrantYellow]
+                          outputRange: [colors.border, colors.primary]
                         })
                       }
                     ]}>
@@ -323,7 +321,7 @@ export default function LoginScreen({ navigation }: Props) {
                       {
                         borderColor: inputFocusAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [colors.border, colors.vibrantPurple]
+                          outputRange: [colors.border, colors.primary]
                         })
                       }
                     ]}>
@@ -367,7 +365,7 @@ export default function LoginScreen({ navigation }: Props) {
                       disabled={loading}
                     >
                       <LinearGradient
-                        colors={[colors.vibrantPink, colors.vibrantPurple]}
+                        colors={[colors.primary, colors.vibrantPurple]}
                         style={styles.submitGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
@@ -418,6 +416,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
+    backgroundColor: colors.primary,
   },
   keyboardView: {
     flex: 1,
@@ -474,7 +473,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
     borderWidth: 1,
-    borderColor: 'rgba(248, 255, 127, 0.3)',
+    borderColor: 'rgba(255, 149, 221, 0.2)',
   },
   formGradient: {
     padding: spacing.xl,
@@ -494,7 +493,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: colors.vibrantYellow,
+    backgroundColor: colors.primary,
   },
   modeButtonText: {
     fontSize: normalize(14),
@@ -573,7 +572,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: normalize(14),
-    color: colors.vibrantPurple,
+    color: colors.primary,
     fontWeight: '600',
   },
   footer: {
