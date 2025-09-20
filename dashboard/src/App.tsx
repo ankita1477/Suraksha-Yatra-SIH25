@@ -278,77 +278,87 @@ function DashboardApp() {
 
       {/* Main Layout */}
       <div className="flex">
-        {/* Sidebar Navigation */}
-        <nav className="w-64 bg-slate-800/50 backdrop-blur-xl border-r border-slate-600/30 min-h-[calc(100vh-80px)] p-4">
+        {/* Minimalistic Sidebar Navigation */}
+        <nav className="w-20 hover:w-72 bg-gradient-to-b from-gray-900/98 to-gray-800/98 backdrop-blur-2xl border-r border-gray-700/30 min-h-[calc(100vh-89px)] p-4 shadow-2xl transition-all duration-300 ease-in-out group overflow-hidden">
           <div className="space-y-2">
             {[
-              { id: 'incidents' as const, label: 'Incidents', icon: '📊', badge: incidents.filter(i => i.status === 'open').length },
-              { id: 'panic-alerts' as const, label: 'Panic Alerts', icon: '🚨', badge: incidents.filter(i => i.type === 'panic').length },
-              { id: 'emergency-contacts' as const, label: 'Emergency Contacts', icon: '📞' },
-              { id: 'emergency-services' as const, label: 'Emergency Services', icon: '🏥' },
-              { id: 'safe-zones' as const, label: 'Safe Zones', icon: '🛡️' },
-              { id: 'users' as const, label: 'User Management', icon: '👥' },
-              { id: 'notifications' as const, label: 'Notifications', icon: '🔔' }
+              { id: 'incidents' as const, label: 'Incidents', icon: '📊', iconClass: 'fas fa-chart-line', badge: incidents.filter(i => i.status === 'open').length, color: 'from-blue-400 to-cyan-400' },
+              { id: 'panic-alerts' as const, label: 'Panic Alerts', icon: '⚠️', iconClass: 'fas fa-exclamation-triangle', badge: incidents.filter(i => i.type === 'panic').length, color: 'from-red-400 to-pink-400' },
+              { id: 'emergency-contacts' as const, label: 'Emergency Contacts', icon: '☎️', iconClass: 'fas fa-phone', color: 'from-green-400 to-emerald-400' },
+              { id: 'emergency-services' as const, label: 'Emergency Services', icon: '🏥', iconClass: 'fas fa-hospital', color: 'from-purple-400 to-violet-400' },
+              { id: 'safe-zones' as const, label: 'Safe Zones', icon: '🛡️', iconClass: 'fas fa-shield-alt', color: 'from-yellow-400 to-orange-400' },
+              { id: 'users' as const, label: 'User Management', icon: '👥', iconClass: 'fas fa-users', color: 'from-indigo-400 to-blue-400' },
+              { id: 'notifications' as const, label: 'Notifications', icon: '🔔', iconClass: 'fas fa-bell', color: 'from-pink-400 to-rose-400' }
             ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all flex items-center gap-3 border-none text-left ${
-                  activeTab === tab.id 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="flex-1">{tab.label}</span>
-                {tab.badge && tab.badge > 0 && (
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+              <div key={tab.id} className="relative">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full h-12 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-300 flex items-center justify-center group-hover:justify-start group-hover:px-4 border border-transparent relative overflow-hidden ${
                     activeTab === tab.id 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-red-500 text-white'
-                  }`}>
-                    {tab.badge}
+                      ? `bg-gradient-to-r ${tab.color} text-black shadow-lg` 
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white hover:border-gray-600/30'
+                  }`}
+                  title={tab.label}
+                >
+                  <i className={`${tab.iconClass} text-lg transition-all duration-300`}></i>
+                  <span className="absolute left-16 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75 whitespace-nowrap font-medium">
+                    {tab.label}
                   </span>
-                )}
-              </button>
+                  {tab.badge && tab.badge > 0 && (
+                    <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center transition-all duration-300 ${
+                      activeTab === tab.id 
+                        ? 'bg-black/20 text-black' 
+                        : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
+                    }`}>
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              </div>
             ))}
           </div>
 
-          {/* Quick Actions */}
-          <div className="mt-8 pt-8 border-t border-slate-600/30">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h3>
+          {/* Minimalistic Quick Actions */}
+          <div className="mt-8 pt-6 border-t border-gray-700/30 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-100">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">
+              Quick Actions
+            </h3>
             <div className="space-y-2">
-              <button className="w-full px-3 py-2 bg-green-500/10 border border-green-500/20 text-green-300 rounded-lg text-xs font-semibold hover:bg-green-500/20 transition-all">
-                + Create Alert
+              <button className="w-full h-10 bg-gray-800/60 border border-green-400/30 text-green-400 rounded-lg text-xs font-semibold hover:bg-green-400/10 transition-all duration-300 flex items-center justify-center group-hover:justify-start group-hover:px-3 gap-2">
+                <i className="fas fa-plus text-sm"></i>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">Alert</span>
               </button>
-              <button className="w-full px-3 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-500/20 transition-all">
-                + Add Safe Zone
+              <button className="w-full h-10 bg-gray-800/60 border border-blue-400/30 text-blue-400 rounded-lg text-xs font-semibold hover:bg-blue-400/10 transition-all duration-300 flex items-center justify-center group-hover:justify-start group-hover:px-3 gap-2">
+                <i className="fas fa-map-marker-alt text-sm"></i>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">Zone</span>
               </button>
             </div>
           </div>
         </nav>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-auto max-h-[calc(100vh-80px)]">
+        {/* Enhanced Main Content Area with vibrant design */}
+        <main className="flex-1 p-8 overflow-auto max-h-[calc(100vh-89px)] bg-gradient-to-br from-gray-900/30 via-black/50 to-gray-900/30">
           {/* Tab Content */}
           {activeTab === 'incidents' && (
-            <section className="space-y-6">
-              {/* Analytics Dashboard */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-                <DashboardAnalytics 
-                  token={token || ''} 
-                  incidents={incidents} 
-                  connected={connected} 
-                />
+            <section className="space-y-8">
+              {/* Enhanced Analytics Dashboard with vibrant cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
+                <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-2xl rounded-3xl p-8 border-2 border-pink-400/20 shadow-2xl shadow-pink-400/10">
+                  <DashboardAnalytics 
+                    token={token || ''} 
+                    incidents={incidents} 
+                    connected={connected} 
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
-                {/* Incidents Panel */}
-                <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 overflow-hidden">
-                  <div className="flex justify-between items-center mb-5 gap-3">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+                {/* Enhanced Incidents Panel */}
+                <div className="bg-gradient-to-br from-yellow-400/10 to-orange-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-yellow-400/20 shadow-2xl shadow-yellow-400/10">
+                  <div className="flex justify-between items-center mb-6 gap-3">
                     <div>
-                      <h2 className="m-0 text-xl font-semibold text-slate-100">Active Incidents</h2>
-                      <p className="mt-1 mb-0 text-sm text-slate-400">
+                      <h2 className="m-0 text-2xl font-bold text-white bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Active Incidents</h2>
+                      <p className="mt-2 mb-0 text-sm text-gray-300">
                         {incidents.length} total · {incidents.filter(i => i.status === 'open').length} open
                       </p>
                     </div>
@@ -356,7 +366,7 @@ function DashboardApp() {
                       <select 
                         value={filters.severity || ''} 
                         onChange={e=>setFilters(f=>({...f, severity: e.target.value || undefined}))} 
-                        className="bg-slate-900/80 text-slate-200 border border-slate-600/50 rounded-lg px-3 py-2 text-sm cursor-pointer focus:outline-none focus:border-blue-500"
+                        className="bg-gray-900/80 text-gray-200 border border-yellow-400/30 rounded-xl px-4 py-2 text-sm cursor-pointer focus:outline-none focus:border-yellow-400 hover:border-yellow-400/50 transition-all duration-300"
                       >
                         <option value=''>All Severities</option>
                         <option value='critical'>🔴 Critical</option>
@@ -376,14 +386,14 @@ function DashboardApp() {
                 </div>
 
                 {/* Map Panel */}
-                <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 min-h-[600px] flex flex-col border border-slate-600/30">
-                  <div className="mb-4">
-                    <h2 className="mt-0 mb-1 text-xl font-semibold text-slate-100">Live Map</h2>
-                    <p className="m-0 text-sm text-slate-400">
+                <div className="bg-gradient-to-br from-blue-400/10 to-cyan-400/10 backdrop-blur-2xl rounded-3xl p-8 min-h-[600px] flex flex-col border-2 border-blue-400/20 shadow-2xl shadow-blue-400/10">
+                  <div className="mb-6">
+                    <h2 className="mt-0 mb-2 text-2xl font-bold text-white bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Live Map</h2>
+                    <p className="m-0 text-sm text-gray-300">
                       Showing {Math.min(incidents.length, 100)} incidents
                     </p>
                   </div>
-                  <div className="flex-1 min-h-[400px] rounded-xl overflow-hidden border border-slate-600/30">
+                  <div className="flex-1 min-h-[400px] rounded-2xl overflow-hidden border-2 border-blue-400/20">
                     <EnhancedIncidentMap incidents={incidents.slice(0,100)} mapId="incidents-map" />
                   </div>
                 </div>
@@ -392,16 +402,18 @@ function DashboardApp() {
           )}
 
           {activeTab === 'panic-alerts' && (
-            <section className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
-              <PanicAlertsPanel token={token || ''} />
-              <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 min-h-[600px] flex flex-col border border-slate-600/30">
-                <div className="mb-4">
-                  <h2 className="mt-0 mb-1 text-xl font-semibold text-slate-100">Panic Alerts Map</h2>
-                  <p className="m-0 text-sm text-slate-400">
+            <section className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+              <div className="bg-gradient-to-br from-red-400/10 to-pink-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-red-400/20 shadow-2xl shadow-red-400/10">
+                <PanicAlertsPanel token={token || ''} />
+              </div>
+              <div className="bg-gradient-to-br from-purple-400/10 to-violet-400/10 backdrop-blur-2xl rounded-3xl p-8 min-h-[600px] flex flex-col border-2 border-purple-400/20 shadow-2xl shadow-purple-400/10">
+                <div className="mb-6">
+                  <h2 className="mt-0 mb-2 text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">Panic Alerts Map</h2>
+                  <p className="m-0 text-sm text-gray-300">
                     Real-time emergency locations
                   </p>
                 </div>
-                <div className="flex-1 min-h-[400px] rounded-xl overflow-hidden border border-slate-600/30">
+                <div className="flex-1 min-h-[400px] rounded-2xl overflow-hidden border-2 border-purple-400/20">
                   <EnhancedIncidentMap incidents={incidents.filter(i => i.type === 'panic').slice(0,100)} mapId="panic-alerts-map" />
                 </div>
               </div>
@@ -409,38 +421,46 @@ function DashboardApp() {
           )}
 
           {activeTab === 'emergency-contacts' && (
-            <section>
+            <section className="bg-gradient-to-br from-green-400/10 to-emerald-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-green-400/20 shadow-2xl shadow-green-400/10">
               <EmergencyContactsPanel token={token || ''} />
             </section>
           )}
 
           {activeTab === 'emergency-services' && (
-            <section>
+            <section className="bg-gradient-to-br from-purple-400/10 to-violet-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-purple-400/20 shadow-2xl shadow-purple-400/10">
               <EmergencyServicesPanel token={token || ''} />
             </section>
           )}
 
           {activeTab === 'users' && (
-            <section>
+            <section className="bg-gradient-to-br from-blue-400/10 to-cyan-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-blue-400/20 shadow-2xl shadow-blue-400/10">
               <UserManagement token={token || ''} />
             </section>
           )}
 
           {activeTab === 'safe-zones' && (
-            <section>
+            <section className="bg-gradient-to-br from-yellow-400/10 to-orange-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-yellow-400/20 shadow-2xl shadow-yellow-400/10">
               <SafeZoneManagement />
             </section>
           )}
 
           {activeTab === 'notifications' && (
-            <section>
+            <section className="bg-gradient-to-br from-pink-400/10 to-rose-400/10 backdrop-blur-2xl rounded-3xl p-8 border-2 border-pink-400/20 shadow-2xl shadow-pink-400/10">
               <NotificationCenter token={token || ''} />
             </section>
           )}
 
-          {/* Footer */}
-          <footer className="mt-8 pt-4 border-t border-slate-600/30 text-xs text-slate-500 text-center">
-            Suraksha Emergency Response System · Real-time monitoring with 60s fallback refresh
+          {/* Enhanced Footer with vibrant styling */}
+          <footer className="mt-12 pt-6 border-t-2 border-pink-400/20 text-sm text-gray-400 text-center">
+            <div className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-gray-600/30">
+              <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent font-bold">
+                Suraksha Emergency Response System
+              </span>
+              <span className="text-gray-500 mx-2">·</span>
+              <span className="font-semibold">AI-Powered Real-time Monitoring</span>
+              <span className="text-gray-500 mx-2">·</span>
+              <span className="text-xs">60s fallback refresh</span>
+            </div>
           </footer>
         </main>
       </div>

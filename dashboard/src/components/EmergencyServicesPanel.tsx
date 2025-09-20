@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/api';
 
 interface EmergencyService {
   id: string;
@@ -53,7 +54,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/emergency-services', { 
+      const response = await fetch(`${API_BASE}/emergency-services`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       
@@ -79,8 +80,8 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
     e.preventDefault();
     try {
       const url = editingService 
-        ? `/api/emergency-services/${editingService.id}`
-        : '/api/emergency-services';
+        ? `${API_BASE}/emergency-services/${editingService.id}`
+        : `${API_BASE}/emergency-services`;
       
       const method = editingService ? 'PUT' : 'POST';
       
@@ -119,7 +120,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
   const handleDelete = async (serviceId: string) => {
     if (window.confirm('Are you sure you want to delete this emergency service?')) {
       try {
-        const response = await fetch(`/api/emergency-services/${serviceId}`, {
+        const response = await fetch(`${API_BASE}/emergency-services/${serviceId}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -155,7 +156,7 @@ export const EmergencyServicesPanel: React.FC<Props> = ({ token }) => {
       const service = services.find(s => s.id === serviceId);
       if (!service) return;
 
-      const response = await fetch(`/api/emergency-services/${serviceId}`, {
+      const response = await fetch(`${API_BASE}/emergency-services/${serviceId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/api';
 
 interface PanicAlert {
   _id: string;
@@ -34,7 +35,7 @@ export const PanicAlertsPanel: React.FC<Props> = ({ token }) => {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/panic-alerts', {
+      const response = await fetch(`${API_BASE}/panic-alerts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -63,7 +64,7 @@ export const PanicAlertsPanel: React.FC<Props> = ({ token }) => {
 
   const handleAcknowledge = async (alertId: string) => {
     try {
-      const response = await fetch(`/api/panic-alerts/${alertId}/ack`, {
+      const response = await fetch(`${API_BASE}/panic-alerts/${alertId}/ack`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

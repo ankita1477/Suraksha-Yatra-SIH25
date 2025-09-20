@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SafeZoneMap } from '../components/SafeZoneMap';
 import { getSocket } from '../lib/socket';
+import { API_BASE, SOCKET_BASE } from '../lib/api';
 
 interface SafeZone {
   _id: string;
@@ -29,7 +30,7 @@ export function SafeZoneManagement() {
   const [editingZone, setEditingZone] = useState<SafeZone | null>(null);
   
   // Get socket instance
-  const socket = getSocket('http://localhost:4000');
+  const socket = getSocket(SOCKET_BASE);
 
   useEffect(() => {
     fetchSafeZones();
@@ -51,7 +52,7 @@ export function SafeZoneManagement() {
         return;
       }
 
-      const response = await fetch('/api/safe-zones', {
+      const response = await fetch(`${API_BASE}/safe-zones`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -100,7 +101,7 @@ export function SafeZoneManagement() {
   const createSafeZone = async (safeZoneData: Omit<SafeZone, '_id' | 'createdAt' | 'isActive'>) => {
     try {
       const token = localStorage.getItem('dash_token') || localStorage.getItem('authToken');
-      const response = await fetch('/api/safe-zones', {
+      const response = await fetch(`${API_BASE}/safe-zones`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -122,7 +123,7 @@ export function SafeZoneManagement() {
   const updateSafeZone = async (id: string, updates: Partial<SafeZone>) => {
     try {
       const token = localStorage.getItem('dash_token') || localStorage.getItem('authToken');
-      const response = await fetch(`/api/safe-zones/${id}`, {
+      const response = await fetch(`${API_BASE}/safe-zones/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -144,7 +145,7 @@ export function SafeZoneManagement() {
   const deleteSafeZone = async (id: string) => {
     try {
       const token = localStorage.getItem('dash_token') || localStorage.getItem('authToken');
-      const response = await fetch(`/api/safe-zones/${id}`, {
+      const response = await fetch(`${API_BASE}/safe-zones/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

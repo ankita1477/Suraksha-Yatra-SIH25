@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/api';
 
 interface EmergencyContact {
   id: string;
@@ -33,7 +34,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/emergency-contacts', {
+      const response = await fetch(`${API_BASE}/emergency-contacts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -61,8 +62,8 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
     
     try {
       const url = editingContact 
-        ? `/api/emergency-contacts/${editingContact.id}`
-        : '/api/emergency-contacts';
+        ? `${API_BASE}/emergency-contacts/${editingContact.id}`
+        : `${API_BASE}/emergency-contacts`;
       
       const method = editingContact ? 'PUT' : 'POST';
       
@@ -95,7 +96,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
     }
 
     try {
-      const response = await fetch(`/api/emergency-contacts/${contactId}`, {
+      const response = await fetch(`${API_BASE}/emergency-contacts/${contactId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -123,7 +124,7 @@ export const EmergencyContactsPanel: React.FC<Props> = ({ token }) => {
 
   const handleTestContact = async (contactId: string) => {
     try {
-      const response = await fetch(`/api/emergency-contacts/${contactId}/test`, {
+      const response = await fetch(`${API_BASE}/emergency-contacts/${contactId}/test`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

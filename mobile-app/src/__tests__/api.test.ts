@@ -127,7 +127,7 @@ describe('API Service', () => {
 
   describe('API Configuration', () => {
     it('should have correct base URL', () => {
-      expect(api.defaults.baseURL).toBe('http://localhost:4000/api');
+      expect(api.defaults.baseURL).toBe('https://suraksha-backend-cz74.onrender.com/api');
     });
 
     it('should have correct timeout', () => {

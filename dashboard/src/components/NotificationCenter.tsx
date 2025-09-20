@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/api';
 
 interface NotificationToken {
   _id: string;
@@ -49,7 +50,7 @@ export const NotificationCenter: React.FC<Props> = ({ token }) => {
       
       // This would send a test push notification
       // We would need to create an endpoint for this
-      const response = await fetch('/api/notifications/test', {
+      const response = await fetch(`${API_BASE}/notifications/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ export const NotificationCenter: React.FC<Props> = ({ token }) => {
     }
 
     try {
-      const response = await fetch(`/api/user/push-token/${tokenId}`, {
+      const response = await fetch(`${API_BASE}/user/push-token/${tokenId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -101,7 +102,7 @@ export const NotificationCenter: React.FC<Props> = ({ token }) => {
     }
 
     try {
-      const response = await fetch('/api/notifications/broadcast', {
+      const response = await fetch(`${API_BASE}/notifications/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

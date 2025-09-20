@@ -21,6 +21,8 @@ import { colors, typography, spacing, borderRadius } from '../../utils/theme';
 import { wp, hp, normalize } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { checkBackendHealth, checkAiHealth } from '../../services/healthService';
+import { getApiBaseUrl } from '../../config/env';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -32,6 +34,13 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // Debug panel state
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
+  const [aiStatus, setAiStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
+  const [apiMessage, setApiMessage] = useState<string>('');
+  const [aiMessage, setAiMessage] = useState<string>('');
+  const [baseUrl, setBaseUrl] = useState<string>('');
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -81,6 +90,10 @@ export default function LoginScreen({ navigation }: Props) {
 
     // Start floating particles animation
     startFloatingParticles();
+    // Load base URL for debug panel
+    (async () => {
+      try { setBaseUrl(await getApiBaseUrl()); } catch {}
+    })();
   }, []);
 
   const startFloatingParticles = () => {
@@ -182,14 +195,47 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       if (mode === 'login') {
         await login(email, password);
-        navigation.replace('Home');
+        // Don't navigate manually - let the auth state change trigger navigation
       } else {
         await register(email, password);
-        navigation.replace('Home');
+        // Don't navigate manually - let the auth state change trigger navigation
       }
     } catch (e: any) {
       console.error('Auth error:', e);
       setError(e.message || 'Authentication failed');
+    }
+  };
+
+  const runHealthChecks = async () => {
+    setApiStatus('checking');
+    setAiStatus('checking');
+    setApiMessage('');
+    setAiMessage('');
+    try {
+      const backend = await checkBackendHealth();
+      if (backend.ok) {
+        setApiStatus('ok');
+        setApiMessage('Backend OK');
+      } else {
+        setApiStatus('fail');
+        setApiMessage(backend.error || 'Backend unreachable');
+      }
+    } catch (e: any) {
+      setApiStatus('fail');
+      setApiMessage(e.message || 'Backend check failed');
+    }
+    try {
+      const ai = await checkAiHealth();
+      if (ai.ok) {
+        setAiStatus('ok');
+        setAiMessage('AI OK');
+      } else {
+        setAiStatus('fail');
+        setAiMessage(ai.error || 'AI unreachable');
+      }
+    } catch (e: any) {
+      setAiStatus('fail');
+      setAiMessage(e.message || 'AI check failed');
     }
   };
 
@@ -394,6 +440,33 @@ export default function LoginScreen({ navigation }: Props) {
                 <Text style={styles.footerText}>
                   Your safety is our priority. Join thousands of users who trust Suraksha Yatra.
                 </Text>
+                {/* Debug Toggle */}
+                <TouchableOpacity
+                  style={styles.debugToggle}
+                  onLongPress={() => setDebugOpen(o => !o)}
+                  delayLongPress={500}
+                >
+                  <Text style={styles.debugToggleText}>{debugOpen ? 'Hide Diagnostics' : 'Hold 0.5s for Diagnostics'}</Text>
+                </TouchableOpacity>
+                {debugOpen && (
+                  <View style={styles.debugPanel}>
+                    <Text style={styles.debugTitle}>Connectivity</Text>
+                    <Text style={styles.debugLine}>Base URL: <Text style={styles.debugMono}>{baseUrl}</Text></Text>
+                    <View style={styles.debugRow}>
+                      <Text style={styles.debugLine}>Backend: <StatusBadge status={apiStatus} /></Text>
+                      <Text style={styles.debugLine}>AI: <StatusBadge status={aiStatus} /></Text>
+                    </View>
+                    {(apiMessage || aiMessage) && (
+                      <View style={{ marginTop: 4 }}>
+                        {apiMessage ? <Text style={styles.debugMsg}>API: {apiMessage}</Text> : null}
+                        {aiMessage ? <Text style={styles.debugMsg}>AI: {aiMessage}</Text> : null}
+                      </View>
+                    )}
+                    <TouchableOpacity style={styles.debugButton} onPress={runHealthChecks} disabled={apiStatus==='checking' || aiStatus==='checking'}>
+                      <Text style={styles.debugButtonText}>{apiStatus==='checking' || aiStatus==='checking' ? 'Checking...' : 'Run Checks'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </Animated.View>
           </ScrollView>
@@ -402,6 +475,22 @@ export default function LoginScreen({ navigation }: Props) {
     </SafeAreaWrapper>
   );
 }
+
+// Small inline status badge component
+const StatusBadge = ({ status }: { status: 'idle' | 'checking' | 'ok' | 'fail' }) => {
+  const map: Record<string, { label: string; color: string }> = {
+    idle: { label: 'idle', color: '#666' },
+    checking: { label: '...', color: '#888' },
+    ok: { label: 'OK', color: '#16a34a' },
+    fail: { label: 'FAIL', color: '#dc2626' },
+  };
+  const d = map[status];
+  return (
+    <View style={{ backgroundColor: d.color, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
+      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>{d.label}</Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -582,4 +671,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: normalize(18),
   },
+  debugToggle: {
+    marginTop: spacing.md,
+    paddingVertical: 4,
+  },
+  debugToggleText: {
+    fontSize: normalize(10),
+    color: colors.textSecondary,
+    textAlign: 'center'
+  },
+  debugPanel: {
+    marginTop: spacing.md,
+    width: '100%',
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  debugTitle: {
+    fontSize: normalize(12),
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  debugRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  debugLine: {
+    fontSize: normalize(11),
+    color: colors.textSecondary,
+  },
+  debugMono: {
+    fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
+    fontSize: normalize(11),
+    color: colors.text,
+  },
+  debugMsg: {
+    fontSize: normalize(10),
+    color: colors.textSecondary,
+  },
+  debugButton: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.vibrantPurple,
+    paddingVertical: 6,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center'
+  },
+  debugButtonText: {
+    color: colors.background,
+    fontSize: normalize(12),
+    fontWeight: '600'
+  }
 });

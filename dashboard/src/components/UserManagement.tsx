@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/api';
 
 interface User {
   _id: string;
@@ -60,7 +61,7 @@ export const UserManagement: React.FC<Props> = ({ token }) => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch(`${API_BASE}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

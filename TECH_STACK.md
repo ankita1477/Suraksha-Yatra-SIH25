@@ -30,15 +30,24 @@ Suraksha Yatra is a comprehensive safety and emergency response platform designe
 ## 📱 Frontend Stack
 
 ### Mobile App (React Native + Expo)
-- **Framework**: React Native 0.81.4 with Expo SDK 54
-- **Navigation**: React Navigation 7 (Native Stack Navigator)
-- **State Management**: Zustand for lightweight global state
-- **Maps Integration**: React Native Maps with live incident markers
-- **Real-time Communication**: Socket.io-client for live updates
-- **Location Services**: Expo Location with background tracking
-- **Notifications**: Expo Notifications with push notification support
-- **Security**: Expo SecureStore for token management
 
+### API Base URL Configuration (Current Implementation)
+
+The mobile app now uses a hardcoded production backend base URL to simplify APK builds without requiring environment variables:
+
+```
+API: https://suraksha-backend-cz74.onrender.com/api
+WebSocket: wss://suraksha-backend-cz74.onrender.com
+```
+
+Defined in `mobile-app/src/config/env.ts` (`apiBaseUrl`, `wsBaseUrl`). Runtime override helpers still exist:
+
+- `setApiBaseUrl(url)`
+- `getApiBaseUrl()`
+- `setWsBaseUrl(url)`
+- `clearRuntimeOverrides()`
+
+These allow QA to dynamically point the installed APK to a staging backend from inside the app without rebuilding. To re-enable env-based configuration later, restore `getConfigValue` logic to read from `Constants.expoConfig.extra` or `process.env`.
 **Key Features:**
 - Real-time location tracking with geofencing
 - Emergency SOS button with one-tap alert

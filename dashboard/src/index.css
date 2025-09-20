@@ -1,54 +1,303 @@
+/* Import modern fonts - must come first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base resets / globals */
-html, body { margin:0; padding:0; font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif; }
-body { background: linear-gradient(135deg,#020617 0%,#0f172a 40%,#1e293b 100%); color:#f1f5f9; min-height:100vh; }
-*, *::before, *::after { box-sizing:border-box; }
-#root { min-height:100vh; display:contents; }
+/* Base resets / globals - Modern Dark Theme like Mobile App */
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+  font-weight: 400;
+  line-height: 1.6;
+}
 
-/* Component layer test (verifies Tailwind + PostCSS actually run) */
+body { 
+  background: #000000; /* Pure black like mobile app */
+  color: #ffffff; /* Pure white text */
+  min-height: 100vh; 
+  overflow-x: hidden;
+}
+
+*, *::before, *::after { 
+  box-sizing: border-box; 
+}
+
+#root { 
+  min-height: 100vh; 
+  display: contents; 
+}
+
+/* Component layer - Modern Vibrant Design matching Mobile App */
 @layer components {
-  .btn { @apply inline-flex items-center gap-2 rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium shadow hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors; }
-  .panel { @apply rounded-xl bg-slate-800/60 backdrop-blur border border-slate-700/60 shadow-lg p-4; }
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-700 text-slate-200; }
-  .badge-danger { @apply bg-red-500/20 text-red-300; }
-  .badge-warning { @apply bg-amber-500/20 text-amber-300; }
-  .badge-success { @apply bg-emerald-500/20 text-emerald-300; }
+  /* Modern Buttons with vibrant colors */
+  .btn { 
+    @apply inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-lg 
+    transition-all duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 
+    focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary { 
+    background: linear-gradient(135deg, #FF95DD 0%, #E679C5 100%); 
+    color: #000000; 
+    box-shadow: 0 8px 25px rgba(255, 149, 221, 0.3);
+  }
+  .btn-primary:hover { 
+    background: linear-gradient(135deg, #FFB8E8 0%, #FF95DD 100%); 
+    box-shadow: 0 12px 35px rgba(255, 149, 221, 0.4);
+  }
+  
+  .btn-secondary { 
+    background: linear-gradient(135deg, #87BEFE 0%, #6BA6FE 100%); 
+    color: #000000; 
+    box-shadow: 0 8px 25px rgba(135, 190, 254, 0.3);
+  }
+  .btn-secondary:hover { 
+    background: linear-gradient(135deg, #A1CCFE 0%, #87BEFE 100%); 
+    box-shadow: 0 12px 35px rgba(135, 190, 254, 0.4);
+  }
+  
+  .btn-warning { 
+    background: linear-gradient(135deg, #F8FF7F 0%, #E6F066 100%); 
+    color: #000000; 
+    box-shadow: 0 8px 25px rgba(248, 255, 127, 0.3);
+  }
+  .btn-warning:hover { 
+    background: linear-gradient(135deg, #FBFF99 0%, #F8FF7F 100%); 
+    box-shadow: 0 12px 35px rgba(248, 255, 127, 0.4);
+  }
+
+  /* Modern Panels with vibrant accents */
+  .panel { 
+    @apply rounded-2xl backdrop-blur-xl shadow-2xl p-6 border transition-all duration-300;
+    background: rgba(31, 31, 31, 0.95);
+    border-color: rgba(255, 149, 221, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 149, 221, 0.1);
+  }
+  .panel:hover {
+    border-color: rgba(255, 149, 221, 0.4);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 149, 221, 0.2);
+  }
+
+  /* Vibrant Cards matching mobile app */
+  .card-pink { 
+    background: linear-gradient(135deg, #FF95DD 0%, #E679C5 100%); 
+    color: #000000;
+    box-shadow: 0 15px 40px rgba(255, 149, 221, 0.3);
+  }
+  .card-yellow { 
+    background: linear-gradient(135deg, #F8FF7F 0%, #E6F066 100%); 
+    color: #000000;
+    box-shadow: 0 15px 40px rgba(248, 255, 127, 0.3);
+  }
+  .card-blue { 
+    background: linear-gradient(135deg, #87BEFE 0%, #6BA6FE 100%); 
+    color: #000000;
+    box-shadow: 0 15px 40px rgba(135, 190, 254, 0.3);
+  }
+  .card-dark { 
+    background: linear-gradient(135deg, #1F1F1F 0%, #2A2A2A 100%); 
+    color: #ffffff;
+    box-shadow: 0 15px 40px rgba(31, 31, 31, 0.4);
+  }
+
+  /* Modern Badges with vibrant colors */
+  .badge { 
+    @apply inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .badge-danger { 
+    background: linear-gradient(135deg, #FF1744 0%, #D50000 100%); 
+    color: #ffffff;
+  }
+  .badge-warning { 
+    background: linear-gradient(135deg, #FFD600 0%, #FFC107 100%); 
+    color: #000000;
+  }
+  .badge-success { 
+    background: linear-gradient(135deg, #00E676 0%, #00C853 100%); 
+    color: #000000;
+  }
+  .badge-info { 
+    background: linear-gradient(135deg, #87BEFE 0%, #6BA6FE 100%); 
+    color: #000000;
+  }
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width:8px; height:8px; }
-::-webkit-scrollbar-track { background:rgba(15,23,42,0.25); }
-::-webkit-scrollbar-thumb { background:rgba(100,116,139,0.45); border-radius:4px; }
-::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,0.7); }
-
-/* Focus outlines */
-button:focus, select:focus, input:focus { outline:2px solid rgba(59,130,246,0.5); outline-offset:2px; }
-select:focus,
-input:focus {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
-  outline-offset: 2px;
+/* Modern Scrollbar with vibrant accents */
+::-webkit-scrollbar { 
+  width: 12px; 
+  height: 12px; 
+}
+::-webkit-scrollbar-track { 
+  background: rgba(31, 31, 31, 0.3); 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb { 
+  background: linear-gradient(135deg, #FF95DD 0%, #87BEFE 100%); 
+  border-radius: 10px; 
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { 
+  background: linear-gradient(135deg, #FFB8E8 0%, #A1CCFE 100%);
+  background-clip: content-box;
 }
 
-/* Leaflet dark popup overrides */
+/* Modern Focus Outlines with vibrant colors */
+button:focus, select:focus, input:focus { 
+  outline: 2px solid #FF95DD; 
+  outline-offset: 2px; 
+  border-radius: 8px;
+}
+/* Leaflet Map Popup - Modern Dark Theme with vibrant accents */
 .leaflet-container .leaflet-popup-content-wrapper {
-  background: rgba(15,23,42,0.95);
-  color: #e2e8f0;
-  border: 1px solid rgba(71,85,105,0.6);
-  border-radius: 0.75rem;
-  backdrop-filter: blur(6px);
+  background: rgba(31, 31, 31, 0.98);
+  color: #ffffff;
+  border: 2px solid rgba(255, 149, 221, 0.4);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 149, 221, 0.2);
 }
 .leaflet-container .leaflet-popup-tip {
-  background: rgba(15,23,42,0.95);
-  border: 1px solid rgba(71,85,105,0.6);
+  background: rgba(31, 31, 31, 0.98);
+  border: 2px solid rgba(255, 149, 221, 0.4);
 }
 .leaflet-container .leaflet-popup-content h3 {
-  margin: 0 0 4px 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #93c5fd;
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #FF95DD;
+  text-shadow: 0 2px 8px rgba(255, 149, 221, 0.3);
 }
-.leaflet-container .leaflet-popup-content p { margin: 0 0 6px 0; }
-.leaflet-container .leaflet-popup-content .text-gray-600 { color: #94a3b8 !important; }
+.leaflet-container .leaflet-popup-content p { 
+  margin: 0 0 8px 0; 
+  color: #ffffff;
+  font-weight: 500;
+}
+.leaflet-container .leaflet-popup-content .text-gray-600 { 
+  color: #B0B0B0 !important; 
+}
+
+/* Additional Map Enhancements */
+.leaflet-container {
+  background: #000000 !important;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(31, 31, 31, 0.95) !important;
+  border: 1px solid rgba(255, 149, 221, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Modern Animations and Transitions */
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 149, 221, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(255, 149, 221, 0.6); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes slideInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+/* Animation Classes */
+.animate-glow { animation: glow 3s ease-in-out infinite; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-slide-in-up { animation: slideInUp 0.5s ease-out; }
+.animate-scale-in { animation: scaleIn 0.3s ease-out; }
+
+/* Utility Classes for Enhanced Styling */
+.text-shadow { text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
+.text-shadow-glow { text-shadow: 0 0 20px rgba(255, 149, 221, 0.5); }
+.backdrop-blur-custom { backdrop-filter: blur(20px) saturate(180%); }
+
+/* Enhanced Hover Effects */
+.hover-lift:hover { 
+  transform: translateY(-5px) scale(1.02); 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover { 
+  box-shadow: 0 20px 60px rgba(255, 149, 221, 0.4), 0 0 0 1px rgba(255, 149, 221, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Improved Input Styling */
+input, select, textarea {
+  background: rgba(31, 31, 31, 0.8);
+  border: 2px solid rgba(255, 149, 221, 0.2);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #FF95DD;
+  box-shadow: 0 0 0 3px rgba(255, 149, 221, 0.2);
+  background: rgba(31, 31, 31, 0.95);
+}
+
+/* Modern Table Styling */
+table {
+  background: rgba(31, 31, 31, 0.8);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 149, 221, 0.2);
+}
+
+th {
+  background: linear-gradient(135deg, rgba(255, 149, 221, 0.2) 0%, rgba(135, 190, 254, 0.2) 100%);
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 16px;
+}
+
+td {
+  background: rgba(31, 31, 31, 0.6);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 149, 221, 0.1);
+}
+
+tr:hover td {
+  background: rgba(255, 149, 221, 0.1);
+  transition: all 0.2s ease;
+}

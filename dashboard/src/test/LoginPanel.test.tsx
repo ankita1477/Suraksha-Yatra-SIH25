@@ -10,7 +10,7 @@ vi.mock('axios', () => ({
   },
 }))
 
-const mockedAxios = vi.mocked(axios)
+const mockedAxios = axios as jest.Mocked<typeof axios>
 
 describe('LoginPanel Component', () => {
   const mockOnAuth = vi.fn()

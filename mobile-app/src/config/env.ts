@@ -57,20 +57,10 @@ export interface AppConfig {
  * Get configuration value with fallback
  */
 function getConfigValue(key: string, defaultValue: any, type: 'string' | 'number' | 'boolean' = 'string'): any {
-  const value = Constants.expoConfig?.extra?.[key] || process.env[key];
-  
-  if (value === undefined || value === null) {
-    return defaultValue;
-  }
-
-  switch (type) {
-    case 'number':
-      return typeof value === 'number' ? value : parseInt(value, 10) || defaultValue;
-    case 'boolean':
-      return typeof value === 'boolean' ? value : value === 'true';
-    default:
-      return value;
-  }
+  // Environment-driven lookup removed (hardcoded mode requested)
+  const value = undefined; // force fallback
+  if (value === undefined || value === null) return defaultValue;
+  return defaultValue; // unreachable, keeps signature
 }
 
 /**
@@ -85,8 +75,9 @@ export function loadConfig(): AppConfig {
     appEnvironment: getConfigValue('APP_ENVIRONMENT', 'development'),
 
     // API Configuration
-    apiBaseUrl: getConfigValue('API_BASE_URL', 'http://192.168.31.36:4000/api'),
-    wsBaseUrl: getConfigValue('WS_BASE_URL', 'ws://192.168.31.36:4000'),
+  // Hardcoded production endpoints (no .env usage)
+  apiBaseUrl: 'https://suraksha-backend-cz74.onrender.com/api',
+  wsBaseUrl: 'wss://suraksha-backend-cz74.onrender.com',
 
     // Feature Flags
     enableLocationTracking: getConfigValue('ENABLE_LOCATION_TRACKING', true, 'boolean'),

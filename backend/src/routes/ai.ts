@@ -6,8 +6,46 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 const aiRouter = Router();
 
 // AI Service Configuration
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5000';
-const AI_TIMEOUT = 10000; // 10 seconds
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://suraksha-ai-service.onrender.com';
+const AI_TIMEOUT = 15000; // 15 seconds for heavier calls
+const MAX_RETRIES = 2;
+
+import { recordAISuccess, recordAIFailure, getAIStatus } from '../services/aiStatus';
+
+async function callAI<T>(fn: () => Promise<T>, operation: string, res: any, fallbackFactory?: () => any) {
+  let attempt = 0;
+  while (attempt <= MAX_RETRIES) {
+    try {
+      const data = await fn();
+      recordAISuccess();
+      return data;
+    } catch (err: any) {
+      attempt++;
+      const terminal = attempt > MAX_RETRIES;
+      const msg = err.response?.data?.error || err.message || 'Unknown AI error';
+      if (terminal) {
+        recordAIFailure(`${operation}: ${msg}`);
+        if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+          return res.status(503).json({
+            error: 'AI service unavailable',
+            operation,
+            attempts: attempt,
+            ...(fallbackFactory ? { fallback: fallbackFactory() } : {}),
+            ai_status: getAIStatus(),
+          });
+        }
+        return res.status(500).json({
+          error: `${operation} failed`,
+          message: msg,
+          attempts: attempt,
+          ai_status: getAIStatus(),
+        });
+      }
+      // brief delay before retry
+      await new Promise(r => setTimeout(r, 250 * attempt));
+    }
+  }
+}
 
 // Request schemas
 const routeRiskSchema = z.object({
@@ -86,20 +124,28 @@ aiRouter.post('/risk/predict', authMiddleware, async (req: AuthRequest, res) => 
     const { route, time_of_day, user_id } = parse.data;
 
     // Call AI service
-    const aiResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/risk/predict`,
-      {
-        route,
-        time_of_day: time_of_day || getCurrentTimeOfDay(),
-        user_id: user_id || req.user?.id
-      },
-      { timeout: AI_TIMEOUT }
+    const aiResponse = await callAI(
+      () => axios.post(
+        `${AI_SERVICE_URL}/api/risk/predict`,
+        {
+          route,
+          time_of_day: time_of_day || getCurrentTimeOfDay(),
+          user_id: user_id || req.user?.id
+        },
+        { timeout: AI_TIMEOUT }
+      ),
+      'risk_prediction',
+      res,
+      () => ({
+        risk_score: 30.0,
+        risk_level: 'moderate',
+        recommendations: ['Exercise normal caution', 'Stay aware of surroundings']
+      })
     );
 
-    res.json({
-      success: true,
-      data: aiResponse.data
-    });
+    if (!res.headersSent) {
+      res.json({ success: true, data: (aiResponse as any).data || aiResponse });
+    }
 
   } catch (error: any) {
     console.error('Risk prediction error:', error.message);
@@ -141,16 +187,19 @@ aiRouter.post('/anomaly/detect', authMiddleware, async (req: AuthRequest, res) =
     }
 
     // Call AI service
-    const aiResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/anomaly/detect`,
-      { user_id, location_data },
-      { timeout: AI_TIMEOUT }
+    const aiResponse = await callAI(
+      () => axios.post(
+        `${AI_SERVICE_URL}/api/anomaly/detect`,
+        { user_id, location_data },
+        { timeout: AI_TIMEOUT }
+      ),
+      'anomaly_detection',
+      res,
+      () => ({ is_anomaly: false, confidence_score: 0.0, details: 'Service temporarily unavailable'})
     );
-
-    res.json({
-      success: true,
-      data: aiResponse.data
-    });
+    if (!res.headersSent) {
+      res.json({ success: true, data: (aiResponse as any).data || aiResponse });
+    }
 
   } catch (error: any) {
     console.error('Anomaly detection error:', error.message);
@@ -193,20 +242,23 @@ aiRouter.post('/patterns/analyze', authMiddleware, async (req: AuthRequest, res)
     };
 
     // Call AI service
-    const aiResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/patterns/analyze`,
-      {
-        area,
-        time_range: defaultTimeRange,
-        incident_types
-      },
-      { timeout: AI_TIMEOUT * 2 } // Pattern analysis might take longer
+    const aiResponse = await callAI(
+      () => axios.post(
+        `${AI_SERVICE_URL}/api/patterns/analyze`,
+        {
+          area,
+          time_range: defaultTimeRange,
+          incident_types
+        },
+        { timeout: AI_TIMEOUT * 2 }
+      ),
+      'pattern_analysis',
+      res,
+      () => ({ hotspots: [], trends: {}, risk_zones: [], insights: [] })
     );
-
-    res.json({
-      success: true,
-      data: aiResponse.data
-    });
+    if (!res.headersSent) {
+      res.json({ success: true, data: (aiResponse as any).data || aiResponse });
+    }
 
   } catch (error: any) {
     console.error('Pattern analysis error:', error.message);
@@ -250,20 +302,23 @@ aiRouter.post('/threat/assess', authMiddleware, async (req: AuthRequest, res) =>
     };
 
     // Call AI service
-    const aiResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/threat/assess`,
-      {
-        location,
-        user_profile: user_profile || {},
-        context: defaultContext
-      },
-      { timeout: AI_TIMEOUT }
+    const aiResponse = await callAI(
+      () => axios.post(
+        `${AI_SERVICE_URL}/api/threat/assess`,
+        {
+          location,
+          user_profile: user_profile || {},
+          context: defaultContext
+        },
+        { timeout: AI_TIMEOUT }
+      ),
+      'threat_assessment',
+      res,
+      () => ({ threat_level: 'moderate', threat_score: 30, contributing_factors: [], recommendations: ['Exercise normal caution']})
     );
-
-    res.json({
-      success: true,
-      data: aiResponse.data
-    });
+    if (!res.headersSent) {
+      res.json({ success: true, data: (aiResponse as any).data || aiResponse });
+    }
 
   } catch (error: any) {
     console.error('Threat assessment error:', error.message);
@@ -299,23 +354,29 @@ aiRouter.get('/risk/area/:lat/:lng', authMiddleware, async (req: AuthRequest, re
     }
 
     // Use pattern analysis to get area risk
-    const aiResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/patterns/analyze`,
-      {
-        area: {
-          center: { lat, lng },
-          radius_km: radius
+    const aiResponse = await callAI(
+      () => axios.post(
+        `${AI_SERVICE_URL}/api/patterns/analyze`,
+        {
+          area: {
+            center: { lat, lng },
+            radius_km: radius
+          },
+          time_range: {
+            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            end: new Date().toISOString()
+          }
         },
-        time_range: {
-          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString()
-        }
-      },
-      { timeout: AI_TIMEOUT }
+        { timeout: AI_TIMEOUT }
+      ),
+      'area_risk_summary',
+      res,
+      () => ({ hotspots: [], trends: {}, risk_zones: [], insights: [] })
     );
 
     // Extract area summary from pattern analysis
-    const data = aiResponse.data;
+  if (res.headersSent) return; // error already handled
+  const data = (aiResponse as any).data || aiResponse;
     const totalIncidents = data.trends?.total_incidents || 0;
     const totalPanicAlerts = data.trends?.total_panic_alerts || 0;
     const hotspotCount = data.hotspots?.length || 0;
@@ -344,20 +405,53 @@ aiRouter.get('/risk/area/:lat/:lng', authMiddleware, async (req: AuthRequest, re
 });
 
 // AI Service Health Check
-aiRouter.get('/health', async (req, res) => {
+// Consolidated Health Check (auth not required)
+aiRouter.get('/health', async (_req, res) => {
   try {
     const aiResponse = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 5000 });
+    recordAISuccess();
+    res.json({ success: true, ai: aiResponse.data, ai_status: getAIStatus() });
+  } catch (error: any) {
+    recordAIFailure(error.message);
+    res.status(503).json({ success: false, error: 'unavailable', ai_status: getAIStatus() });
+  }
+});
+
+// AI Service Test Endpoint (no auth required for testing)
+aiRouter.post('/test/risk/predict', async (req, res) => {
+  try {
+    const testData = {
+      route: {
+        start: { lat: 28.6139, lng: 77.2090 },
+        end: { lat: 28.5355, lng: 77.3910 }
+      },
+      time_of_day: "evening"
+    };
+
+    // Call AI service directly
+    const aiResponse = await axios.post(`${AI_SERVICE_URL}/api/risk/predict`, testData, { timeout: AI_TIMEOUT });
+
     res.json({
-      ai_service: aiResponse.data,
-      backend_timestamp: new Date().toISOString()
+      success: true,
+      test_mode: true,
+      ai_service_response: aiResponse.data,
+      test_data_used: testData
     });
   } catch (error: any) {
+    console.error('AI service test error:', error.message);
     res.status(503).json({
-      error: 'AI service health check failed',
-      status: 'unavailable',
-      backend_timestamp: new Date().toISOString()
+      success: false,
+      error: 'AI service test failed',
+      details: error.message,
+      ai_service_url: AI_SERVICE_URL
     });
   }
+});
+
+// AI Service Health Check (no auth required for testing)
+// AI status diagnostics (auth optional but could restrict later)
+aiRouter.get('/status', (_req, res) => {
+  res.json({ ai_service_url: AI_SERVICE_URL, ...getAIStatus() });
 });
 
 // Helper function to determine current time of day

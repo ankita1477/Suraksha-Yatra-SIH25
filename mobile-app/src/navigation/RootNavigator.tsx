@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SplashScreen from '../screens/auth/SplashScreen';
@@ -26,6 +26,21 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const loading = useAuthStore(state => state.loading);
+  const beenToSplash = useAuthStore(state => state.beenToSplash);
+  const markSplashSeen = useAuthStore(state => state.markSplashSeen);
+  const bootstrap = useAuthStore(state => state.bootstrap);
+
+  useEffect(() => {
+    // Run bootstrap exactly once
+    bootstrap();
+  }, []);
+
+  // Mark splash as seen when auth finished loading
+  useEffect(() => {
+    if (!loading && !beenToSplash) {
+      markSplashSeen();
+    }
+  }, [loading]);
 
   // Show loading spinner while bootstrapping auth state
   if (loading) {
@@ -38,13 +53,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="Splash"
-        screenOptions={{ headerShown: false }}
-      >
-        {/* Always show splash first */}
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           // Authenticated stack
           <>
@@ -56,7 +65,10 @@ export default function RootNavigator() {
           </>
         ) : (
           // Unauthenticated stack
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            {!beenToSplash && <Stack.Screen name="Splash" component={SplashScreen} />}
+            <Stack.Screen name="Login" component={LoginScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

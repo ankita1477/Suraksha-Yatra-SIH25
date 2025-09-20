@@ -10,6 +10,8 @@ interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
   mode: 'login' | 'register';
+  beenToSplash: boolean; // new flag
+  markSplashSeen: () => void;
   toggleMode: () => void;
   bootstrap: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -24,6 +26,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   isAuthenticated: false,
   mode: 'login',
+  beenToSplash: false,
+  markSplashSeen: () => set({ beenToSplash: true }),
   toggleMode: () => set(s => ({ mode: s.mode === 'login' ? 'register' : 'login' })),
   bootstrap: async () => {
     try {
@@ -129,6 +133,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
         user: res.user, 
         isAuthenticated: true 
       });
+    } catch (error) {
+      console.error('Login error:', error);
+      // Re-throw the error so the UI can handle it
+      throw error;
     } finally {
       set({ loading: false });
     }
@@ -147,6 +155,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         mode: 'login' 
       });
+    } catch (error) {
+      console.error('Register error:', error);
+      // Re-throw the error so the UI can handle it
+      throw error;
     } finally {
       set({ loading: false });
     }

@@ -31,6 +31,7 @@ export default function SplashScreen({ navigation }: Props) {
   const textSlideAnim = useState(new Animated.Value(50))[0];
   const taglineAnim = useState(new Animated.Value(0))[0];
   const buttonAnim = useState(new Animated.Value(0))[0];
+  const progressAnim = useState(new Animated.Value(0))[0]; // New progress animation value that does NOT use native driver (width not supported natively)
   const particleAnims = useState(
     Array.from({ length: 20 }, () => ({
       x: new Animated.Value((Math.random() - 0.5) * width),
@@ -111,6 +112,9 @@ export default function SplashScreen({ navigation }: Props) {
       // Hold for a moment
       Animated.delay(1500),
 
+      // Progress bar animation
+      Animated.timing(progressAnim, { toValue: 1, duration: 1200, useNativeDriver: false }),
+
       // Show button
       Animated.timing(buttonAnim, {
         toValue: 1,
@@ -128,29 +132,30 @@ export default function SplashScreen({ navigation }: Props) {
 
   const handleLetsGo = () => {
     Animated.sequence([
-      Animated.timing(buttonAnim, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
+      Animated.timing(buttonAnim, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start(() => {
       if (isAuthenticated) {
-        navigation.replace('Home');
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       } else {
-        navigation.replace('Login');
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
       }
     });
   };
+
+  useEffect(() => {
+    // Safety auto navigation after 5s if button not pressed
+    const timeout = setTimeout(() => {
+      if (!showButton) return; // wait until animations done
+      if (isAuthenticated) {
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      }
+    }, 7000);
+    return () => clearTimeout(timeout);
+  }, [showButton, isAuthenticated]);
 
   const logoRotation = logoRotateAnim.interpolate({
     inputRange: [0, 1],
@@ -239,9 +244,9 @@ export default function SplashScreen({ navigation }: Props) {
               style={[
                 styles.loadingProgress,
                 {
-                  width: fadeAnim.interpolate({
+                  width: progressAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: ['0%', '100%'],
+                    outputRange: [0, wp(60)],
                   }),
                 },
               ]}

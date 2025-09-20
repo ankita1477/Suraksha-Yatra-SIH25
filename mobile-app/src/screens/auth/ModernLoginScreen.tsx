@@ -174,10 +174,10 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       if (mode === 'login') {
         await login(email, password);
-        navigation.replace('Home');
+        // Don't navigate manually - let the auth state change trigger navigation
       } else {
         await register(email, password);
-        navigation.replace('Home');
+        // Don't navigate manually - let the auth state change trigger navigation
       }
     } catch (e: any) {
       console.error('Auth error:', e);

@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -8,9 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:4000',
+        target: 'https://suraksha-backend-cz74.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
         timeout: 30000,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
@@ -19,7 +18,7 @@ export default defineConfig({
         },
       },
       '/socket.io': {
-        target: 'http://127.0.0.1:4000',
+        target: 'https://suraksha-backend-cz74.onrender.com',
         changeOrigin: true,
         ws: true,
         timeout: 30000,
@@ -35,10 +34,5 @@ export default defineConfig({
         },
       }
     }
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
   },
 })

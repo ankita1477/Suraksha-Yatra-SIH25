@@ -8,6 +8,7 @@ import { incidentsRouter } from './routes/incidents';
 import { emergencyContactsRouter } from './routes/emergencyContacts';
 import emergencyServicesRouter from './routes/emergencyServices';
 import { userRouter } from './routes/user';
+import { usersRouter } from './routes/users';
 import { createSafeZoneRouter } from './routes/safeZones';
 import { aiRouter } from './routes/ai';
 import { GeofencingService } from './services/geofencing';
@@ -23,6 +24,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
   app.use('/api/emergency-contacts', emergencyContactsRouter);
+  app.use('/api/users', usersRouter); // admin users listing & stats
   app.use('/api/emergency-services', emergencyServicesRouter);
   app.use('/api/ai', aiRouter);
 

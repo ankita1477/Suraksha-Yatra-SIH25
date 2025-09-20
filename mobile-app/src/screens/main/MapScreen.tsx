@@ -6,11 +6,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 let MapView: any = null;
 let Marker: any = null;
 let Circle: any = null;
-if (Platform.OS !== 'web') {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  Circle = maps.Circle;
+
+// Safer map import with error handling
+try {
+  if (Platform.OS !== 'web') {
+    const maps = require('react-native-maps');
+    MapView = maps.default;
+    Marker = maps.Marker;
+    Circle = maps.Circle;
+  }
+} catch (mapError) {
+  console.warn('react-native-maps not available:', mapError);
 }
 import * as Location from 'expo-location';
 import { sendLocationUpdate } from '../../services/locationService';
@@ -48,6 +54,8 @@ export default function MapScreen() {
   const [safetyStatus, setSafetyStatus] = useState<SafetyStatus | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const safeZoneService = SafeZoneService.getInstance();
   const prevInsideRef = useRef<boolean | null>(null);
 
@@ -120,33 +128,41 @@ export default function MapScreen() {
     let interval: any;
     
     const initializeLocation = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Location permission is needed for safety monitoring.');
-        return;
-      }
-
-      // Initialize safe zone service
-      await safeZoneService.initialize();
-
-      const loc = await Location.getCurrentPositionAsync({});
-      const newRegion = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-      setRegion(newRegion);
-
-      // Load all incident data
-      await loadIncidentData(loc.coords.latitude, loc.coords.longitude);
-
-      // Start periodic location updates
-      interval = setInterval(async () => {
-        if (!token || !user) {
-          console.log('User not authenticated, skipping location update');
+      try {
+        setError(null);
+        
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setError('Location permission denied');
+          Alert.alert('Permission Required', 'Location permission is needed for safety monitoring.');
           return;
         }
+
+        // Initialize safe zone service
+        await safeZoneService.initialize();
+
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        
+        const newRegion = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setRegion(newRegion);
+        setIsInitialized(true);
+
+        // Load all incident data
+        await loadIncidentData(loc.coords.latitude, loc.coords.longitude);
+
+        // Start periodic location updates
+        interval = setInterval(async () => {
+          if (!token || !user) {
+            console.log('User not authenticated, skipping location update');
+            return;
+          }
         
         try {
           const current = await Location.getCurrentPositionAsync({});
@@ -199,10 +215,13 @@ export default function MapScreen() {
           setStatus('❌ Location update failed');
           console.error('Location update error:', e);
         }
-      }, 30000); // Update every 30 seconds
-    };
-
-    initializeLocation();
+        }, 30000); // Update every 30 seconds
+      } catch (initError) {
+        console.error('Failed to initialize location:', initError);
+        setError('Failed to initialize location services');
+        setIsInitialized(true); // Still mark as initialized to show error state
+      }
+    };    initializeLocation();
 
     // Initialize socket connection
     socketService.connect().then(() => {
@@ -312,6 +331,40 @@ export default function MapScreen() {
     }
   };
 
+  // Show loading while initializing
+  if (!isInitialized) {
+    return (
+      <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#ff4d4f" />
+          <Text style={styles.loadingText}>Initializing map...</Text>
+        </View>
+      </SafeAreaWrapper>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>⚠️ Map Error</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => {
+              setError(null);
+              setIsInitialized(false);
+              // Trigger reinitialization
+            }}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaWrapper>
+    );
+  }
+
   if (!region) return <View style={styles.loading}><ActivityIndicator color="#ff4d4f" /></View>;
 
   if (Platform.OS === 'web') {
@@ -351,8 +404,13 @@ export default function MapScreen() {
 
         {/* Map container */}
         <View style={styles.mapContainer}>
-          {MapView && (
-            <MapView style={styles.map} initialRegion={region}>
+          {MapView && region ? (
+            <MapView 
+              style={styles.map} 
+              initialRegion={region}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+            >
               {/* User location marker */}
               {Marker && (
                 <Marker 
@@ -420,6 +478,14 @@ export default function MapScreen() {
                 />
               ))}
             </MapView>
+          ) : (
+            <View style={styles.mapFallback}>
+              <Text style={styles.mapFallbackText}>📍 Map Unavailable</Text>
+              <Text style={styles.mapFallbackSubtext}>
+                Maps are not supported on this device. 
+                Current location and safety features are still active.
+              </Text>
+            </View>
           )}
         </View>
         
@@ -628,5 +694,63 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     lineHeight: 20, 
     marginBottom: spacing.sm,
+  },
+  loadingText: {
+    color: colors.text,
+    marginTop: spacing.md,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  errorTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    ...shadows.small,
+  },
+  retryText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  mapFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+  },
+  mapFallbackText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  mapFallbackSubtext: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
