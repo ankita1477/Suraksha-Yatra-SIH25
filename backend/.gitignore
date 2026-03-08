@@ -15,6 +15,9 @@ build/
 .env.test.local
 .env.production.local
 
+# SSH keys
+*.pem
+
 # Logs
 logs
 *.log
