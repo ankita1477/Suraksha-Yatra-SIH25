@@ -1,11 +1,12 @@
 import * as Notifications from 'expo-notifications';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, ErrorInfo } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert, TouchableOpacity, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 // On web, react-native-maps can break for this version; guard usage.
 let MapView: any = null;
 let Marker: any = null;
 let Circle: any = null;
+let PROVIDER_GOOGLE: any = null;
 
 // Safer map import with error handling
 try {
@@ -14,9 +15,36 @@ try {
     MapView = maps.default;
     Marker = maps.Marker;
     Circle = maps.Circle;
+    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
   }
 } catch (mapError) {
   console.warn('react-native-maps not available:', mapError);
+}
+
+// Error boundary to catch native map crashes
+class MapErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('MapErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
 }
 import * as Location from 'expo-location';
 import { sendLocationUpdate } from '../../services/locationService';
@@ -404,12 +432,25 @@ export default function MapScreen() {
 
         {/* Map container */}
         <View style={styles.mapContainer}>
+          <MapErrorBoundary
+            fallback={
+              <View style={styles.mapFallback}>
+                <Text style={styles.mapFallbackText}>📍 Map Unavailable</Text>
+                <Text style={styles.mapFallbackSubtext}>
+                  The map could not be loaded. Please check your Google Maps API key 
+                  or restart the app.
+                </Text>
+              </View>
+            }
+          >
           {MapView && region ? (
             <MapView 
               style={styles.map} 
               initialRegion={region}
+              provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
               showsUserLocation={true}
               showsMyLocationButton={true}
+              onMapReady={() => console.log('Map is ready')}
             >
               {/* User location marker */}
               {Marker && (
@@ -487,6 +528,7 @@ export default function MapScreen() {
               </Text>
             </View>
           )}
+          </MapErrorBoundary>
         </View>
         
         {/* Modern status cards */}
