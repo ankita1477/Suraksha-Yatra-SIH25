@@ -1,7 +1,10 @@
 import { api } from './api';
+import axios from 'axios';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Alert } from 'react-native';
+import { isOnline } from './offline/networkService';
+import { enqueueLocation } from './offline/offlineLocationQueue';
 
 export interface LocationUpdatePayload {
   latitude: number; longitude: number; speed?: number; accuracy?: number;
@@ -48,10 +51,26 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
 });
 
 export async function sendLocationUpdate(payload: LocationUpdatePayload): Promise<LocationResponse> {
+  if (!isOnline()) {
+    await enqueueLocation(payload);
+    return {
+      saved: false,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   try {
     const res = await api.post('/location', payload);
     return res.data as LocationResponse;
   } catch (error) {
+    if (axios.isAxiosError(error) && !error.response) {
+      await enqueueLocation(payload);
+      return {
+        saved: false,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     console.error('Location update failed:', error);
     throw error;
   }

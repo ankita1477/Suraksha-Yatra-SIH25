@@ -5,16 +5,39 @@ import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerForPushNotificationsAsync, addNotificationResponseListener } from './src/services/notificationService';
 import useAuthStore from './src/state/authStore';
+import { initNetworkService, startNetworkListener, subscribeNetwork } from './src/services/offline/networkService';
+import { initOfflineDb } from './src/services/offline/offlineLocationQueue';
+import { seedEmergencyPhrases } from './src/services/offline/offlinePhrases';
+import { syncOfflineLocations } from './src/services/offline/syncService';
 
 export default function App() {
   const bootstrap = useAuthStore(state => state.bootstrap);
 
   useEffect(() => {
+    let stopNetworkListener: (() => void) | undefined;
+    let unsubscribeNetworkEvents: (() => void) | undefined;
+
     // Initialize authentication state first
     const initializeApp = async () => {
       try {
         // Bootstrap auth state (check for stored tokens)
         await bootstrap();
+
+        // Prepare offline infrastructure before enabling continuous tracking.
+        await initNetworkService();
+        await initOfflineDb();
+        await seedEmergencyPhrases();
+
+        unsubscribeNetworkEvents = subscribeNetwork(async (online) => {
+          if (online) {
+            const syncedCount = await syncOfflineLocations();
+            if (syncedCount > 0) {
+              console.log(`Synced ${syncedCount} offline location records`);
+            }
+          }
+        });
+        stopNetworkListener = startNetworkListener();
+        await syncOfflineLocations();
         
         // Initialize push notifications after auth
         const token = await registerForPushNotificationsAsync();
@@ -41,6 +64,8 @@ export default function App() {
 
     return () => {
       subscription?.remove();
+      stopNetworkListener?.();
+      unsubscribeNetworkEvents?.();
     };
   }, [bootstrap]);
 

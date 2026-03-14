@@ -75,9 +75,9 @@ export function loadConfig(): AppConfig {
     appEnvironment: getConfigValue('APP_ENVIRONMENT', 'development'),
 
     // API Configuration
-  // Hardcoded production endpoints (no .env usage)
-  apiBaseUrl: 'https://suraksha-backend-cz74.onrender.com/api',
-  wsBaseUrl: 'wss://suraksha-backend-cz74.onrender.com',
+  // Local dev: point to machine running `npm run dev` in backend/
+  apiBaseUrl: 'http://10.6.185.106:4000/api',
+  wsBaseUrl: 'ws://10.6.185.106:4000',
 
     // Feature Flags
     enableLocationTracking: getConfigValue('ENABLE_LOCATION_TRACKING', true, 'boolean'),

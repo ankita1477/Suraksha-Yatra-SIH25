@@ -6,6 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 let MapView: any = null;
 let Marker: any = null;
 let Circle: any = null;
+let Polyline: any = null;
+let LocalTile: any = null;
 let PROVIDER_GOOGLE: any = null;
 
 // Safer map import with error handling
@@ -15,6 +17,8 @@ try {
     MapView = maps.default;
     Marker = maps.Marker;
     Circle = maps.Circle;
+    Polyline = maps.Polyline;
+    LocalTile = maps.LocalTile;
     PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
   }
 } catch (mapError) {
@@ -60,6 +64,13 @@ import useAuthStore from '../../state/authStore';
 import SafeAreaWrapper from '../../components/SafeAreaWrapper';
 import { colors, typography, spacing, commonStyles, borderRadius, shadows } from '../../utils/theme';
 import { wp, hp, isSmallDevice, TOUCH_TARGET_SIZE } from '../../utils/responsive';
+import { cacheTouristAreaTiles, getOfflineTilePathTemplate } from '../../services/offline/offlineTiles';
+import { isOnline, subscribeNetwork } from '../../services/offline/networkService';
+import {
+  fetchSafeRouteRecommendation,
+  LatLng,
+  SafeRouteResponse,
+} from '../../services/safeRouteService';
 
 interface PanicAlert {
   _id: string;
@@ -81,6 +92,10 @@ export default function MapScreen() {
   const [safeZones, setSafeZones] = useState<SafeZone[]>([]);
   const [safetyStatus, setSafetyStatus] = useState<SafetyStatus | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [networkOnline, setNetworkOnline] = useState(isOnline());
+  const [routeDestination, setRouteDestination] = useState<LatLng | null>(null);
+  const [safeRouteData, setSafeRouteData] = useState<SafeRouteResponse | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -137,6 +152,53 @@ export default function MapScreen() {
     }
   };
 
+  const recommendRoute = async (destination: LatLng) => {
+    if (!region || !token || !user) {
+      return;
+    }
+
+    setRouteLoading(true);
+    try {
+      const response = await fetchSafeRouteRecommendation({
+        origin: {
+          latitude: region.latitude,
+          longitude: region.longitude,
+        },
+        destination,
+        mode: 'trekking',
+        weather: {
+          rain_intensity: networkOnline ? 35 : 50,
+          flood_risk: networkOnline ? 0.25 : 0.4,
+          visibility_km: networkOnline ? 8 : 5,
+        },
+        terrain: {
+          slope_risk: 0.4,
+          forest_density: 0.35,
+          landslide_risk: 0.3,
+        },
+      });
+
+      setSafeRouteData(response);
+      setStatus(`🧭 Safest route risk ${(response.recommendedRoute.riskScore * 100).toFixed(0)}%`);
+
+      if (response.rerouteRequired) {
+        Alert.alert('Route Warning', 'Current route has elevated risk. A safer alternative is recommended.');
+      }
+    } catch (routeError) {
+      console.error('Safe route recommendation failed:', routeError);
+      Alert.alert('Route Error', 'Could not calculate a safe route right now. Please try again.');
+    } finally {
+      setRouteLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribeNetwork = subscribeNetwork(setNetworkOnline);
+    return () => {
+      unsubscribeNetwork();
+    };
+  }, []);
+
   useEffect(() => {
     // Start entrance animations
     Animated.parallel([
@@ -181,6 +243,22 @@ export default function MapScreen() {
         };
         setRegion(newRegion);
         setIsInitialized(true);
+
+        // Warm a small local tile cache around the user for offline map continuity.
+        if (networkOnline) {
+          const delta = 0.03;
+          cacheTouristAreaTiles(
+            {
+              minLat: loc.coords.latitude - delta,
+              minLon: loc.coords.longitude - delta,
+              maxLat: loc.coords.latitude + delta,
+              maxLon: loc.coords.longitude + delta,
+            },
+            [13, 14]
+          ).catch((tileError) => {
+            console.warn('Offline tile cache warmup failed:', tileError);
+          });
+        }
 
         // Load all incident data
         await loadIncidentData(loc.coords.latitude, loc.coords.longitude);
@@ -299,13 +377,27 @@ export default function MapScreen() {
       }
     };
 
+    const handleRouteDangerAlert = (event: { reason?: string }) => {
+      if (!routeDestination) {
+        return;
+      }
+
+      Alert.alert(
+        'Route Became Risky',
+        event?.reason || 'Conditions changed. Recomputing a safer path.'
+      );
+      recommendRoute(routeDestination);
+    };
+
     socketService.on('incident', handleNewIncident);
     socketService.on('panic_alert', handleNewPanicAlert);
+    socketService.on('route_danger_alert', handleRouteDangerAlert);
 
     return () => {
       if (interval) clearInterval(interval);
       socketService.off('incident', handleNewIncident);
       socketService.off('panic_alert', handleNewPanicAlert);
+      socketService.off('route_danger_alert', handleRouteDangerAlert);
       safeZoneService.cleanup();
     };
   }, []);
@@ -426,7 +518,9 @@ export default function MapScreen() {
         >
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Safety Map</Text>
-            <Text style={styles.headerSubtitle}>Real-time monitoring</Text>
+            <Text style={styles.headerSubtitle}>
+              {networkOnline ? 'Real-time monitoring' : 'Offline Safety Mode'}
+            </Text>
           </View>
         </Animated.View>
 
@@ -448,10 +542,26 @@ export default function MapScreen() {
               style={styles.map} 
               initialRegion={region}
               provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+              mapType={networkOnline ? 'standard' : 'none'}
               showsUserLocation={true}
               showsMyLocationButton={true}
+              onLongPress={(event: any) => {
+                const destination = {
+                  latitude: event.nativeEvent.coordinate.latitude,
+                  longitude: event.nativeEvent.coordinate.longitude,
+                };
+                setRouteDestination(destination);
+                recommendRoute(destination);
+              }}
               onMapReady={() => console.log('Map is ready')}
             >
+              {!networkOnline && LocalTile ? (
+                <LocalTile
+                  pathTemplate={getOfflineTilePathTemplate()}
+                  tileSize={256}
+                />
+              ) : null}
+
               {/* User location marker */}
               {Marker && (
                 <Marker 
@@ -461,6 +571,46 @@ export default function MapScreen() {
                   pinColor="#2563eb"
                 />
               )}
+
+              {/* Safe route destination marker */}
+              {Marker && routeDestination && (
+                <Marker
+                  coordinate={routeDestination}
+                  title="Destination"
+                  description="Long-press map to change destination"
+                  pinColor="#a855f7"
+                />
+              )}
+
+              {/* Recommended safe route polyline */}
+              {Polyline && safeRouteData?.recommendedRoute && (
+                <Polyline
+                  coordinates={safeRouteData.recommendedRoute.path}
+                  strokeWidth={6}
+                  strokeColor="#22c55e"
+                />
+              )}
+
+              {/* Alternative route polylines */}
+              {Polyline && safeRouteData?.alternatives?.map((route) => (
+                <Polyline
+                  key={route.id}
+                  coordinates={route.path}
+                  strokeWidth={3}
+                  strokeColor="rgba(255,255,255,0.6)"
+                />
+              ))}
+
+              {/* Route risk hazards */}
+              {Marker && safeRouteData?.hazards?.map((hazard) => (
+                <Marker
+                  key={hazard.id}
+                  coordinate={{ latitude: hazard.lat, longitude: hazard.lng }}
+                  title={hazard.label}
+                  description={`Severity: ${hazard.severity}`}
+                  pinColor={hazard.severity === 'high' ? '#dc2626' : hazard.severity === 'medium' ? '#f59e0b' : '#22c55e'}
+                />
+              ))}
               
               {/* Incident markers */}
               {Marker && incidents.map((incident) => (
@@ -542,6 +692,22 @@ export default function MapScreen() {
             </LinearGradient>
           </Animated.View>
         )}
+
+        {/* Safe route recommendation card */}
+        {safeRouteData?.recommendedRoute && (
+          <Animated.View style={[styles.routeCard, { opacity: fadeAnim }]}>
+            <LinearGradient
+              colors={['rgba(16,185,129,0.85)', 'rgba(5,150,105,0.75)']}
+              style={styles.routeCardGradient}
+            >
+              <Text style={styles.routeCardTitle}>AI Safe Route</Text>
+              <Text style={styles.routeCardText}>
+                Risk {(safeRouteData.recommendedRoute.riskScore * 100).toFixed(0)}% | ETA {safeRouteData.recommendedRoute.etaMinutes} min
+              </Text>
+              <Text style={styles.routeCardHint}>Long-press map to set destination and re-evaluate.</Text>
+            </LinearGradient>
+          </Animated.View>
+        )}
         
         {/* Bottom info panel */}
         <Animated.View style={[styles.bottomPanel, { opacity: fadeAnim }]}>
@@ -586,6 +752,30 @@ export default function MapScreen() {
             <Text style={styles.refreshText}>
               {refreshing ? '🔄' : '↻'}
             </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Safe route trigger button */}
+        <TouchableOpacity
+          style={styles.routeButton}
+          onPress={() => {
+            if (!region) {
+              return;
+            }
+            const fallbackDestination = routeDestination || {
+              latitude: region.latitude + 0.01,
+              longitude: region.longitude + 0.01,
+            };
+            setRouteDestination(fallbackDestination);
+            recommendRoute(fallbackDestination);
+          }}
+          disabled={routeLoading}
+        >
+          <LinearGradient
+            colors={['#16a34a', '#15803d']}
+            style={styles.refreshGradient}
+          >
+            <Text style={styles.refreshText}>{routeLoading ? '...' : '🧭'}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -646,6 +836,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  routeCard: {
+    position: 'absolute',
+    top: hp(22),
+    left: wp(5),
+    right: wp(5),
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    ...shadows.medium,
+  },
+  routeCardGradient: {
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(4),
+  },
+  routeCardTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  routeCardText: {
+    color: '#ffffff',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  routeCardHint: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    marginTop: 4,
+  },
   bottomPanel: {
     position: 'absolute',
     bottom: hp(2),
@@ -695,6 +913,16 @@ const styles = StyleSheet.create({
   refreshButton: {
     position: 'absolute',
     top: hp(10),
+    right: wp(5),
+    width: wp(12),
+    height: wp(12),
+    borderRadius: wp(6),
+    overflow: 'hidden',
+    ...shadows.medium,
+  },
+  routeButton: {
+    position: 'absolute',
+    top: hp(18),
     right: wp(5),
     width: wp(12),
     height: wp(12),

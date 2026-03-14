@@ -2,6 +2,7 @@ import { Router } from 'express';
 import axios from 'axios';
 import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { IncidentModel } from '../models/Incident';
 
 const aiRouter = Router();
 
@@ -108,6 +109,33 @@ const threatAssessmentSchema = z.object({
     day_of_week: z.string().optional(),
     weather: z.enum(['clear', 'rainy', 'foggy']).optional()
   }).optional()
+});
+
+const safeRouteSchema = z.object({
+  origin: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }),
+  destination: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }),
+  mode: z.enum(['walking', 'trekking', 'driving']).optional(),
+  weather: z.object({
+    rain_intensity: z.number().min(0).max(100).optional(),
+    flood_risk: z.number().min(0).max(1).optional(),
+    visibility_km: z.number().min(0).max(20).optional(),
+  }).optional(),
+  terrain: z.object({
+    slope_risk: z.number().min(0).max(1).optional(),
+    forest_density: z.number().min(0).max(1).optional(),
+    landslide_risk: z.number().min(0).max(1).optional(),
+  }).optional(),
+  restricted_zones: z.array(z.object({
+    center: z.object({ lat: z.number(), lng: z.number() }),
+    radius_m: z.number().positive(),
+    name: z.string().optional(),
+  })).optional(),
 });
 
 // Route Risk Prediction
@@ -342,6 +370,108 @@ aiRouter.post('/threat/assess', authMiddleware, async (req: AuthRequest, res) =>
   }
 });
 
+// Safe Route Recommendation
+aiRouter.post('/routes/recommend', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const parse = safeRouteSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({
+        error: 'Invalid input',
+        issues: parse.error.issues,
+      });
+    }
+
+    const input = parse.data;
+    const mode = input.mode || 'walking';
+    const restrictedZones = input.restricted_zones || getDefaultRestrictedZones();
+
+    let candidates = await fetchRouteCandidates(input.origin, input.destination, mode);
+    if (!candidates.length) {
+      candidates = buildSyntheticCandidates(input.origin, input.destination);
+    }
+
+    const incidents = await IncidentModel.find({
+      createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      location: { $exists: true },
+    })
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
+
+    const evaluated = await Promise.all(
+      candidates.map(async (candidate, index) => {
+        const weatherRisk = estimateWeatherRisk(input.weather, candidate.path);
+        const terrainRisk = estimateTerrainRisk(input.terrain, candidate.path);
+        const incidentRisk = estimateIncidentRisk(candidate.path, incidents as any[]);
+        const restrictedPenalty = estimateRestrictedPenalty(candidate.path, restrictedZones);
+
+        const heuristicRisk = clamp01(
+          weatherRisk * 0.3 + terrainRisk * 0.25 + incidentRisk * 0.35 + restrictedPenalty * 0.1
+        );
+
+        const aiRisk = await getAIRouteRisk(candidate.path);
+        const routeRisk = aiRisk !== null
+          ? clamp01(heuristicRisk * 0.7 + aiRisk * 0.3)
+          : heuristicRisk;
+
+        return {
+          ...candidate,
+          routeRisk,
+          breakdown: {
+            weather: round3(weatherRisk),
+            terrain: round3(terrainRisk),
+            incidents: round3(incidentRisk),
+            restricted: round3(restrictedPenalty),
+            ai: aiRisk === null ? null : round3(aiRisk),
+          },
+          ordinal: index,
+        };
+      })
+    );
+
+    const fastestEta = Math.min(...evaluated.map((x) => x.etaMinutes));
+    const scored = evaluated
+      .map((r) => {
+        const etaPenalty = clamp01((r.etaMinutes - fastestEta) / Math.max(fastestEta, 1));
+        const finalScore = clamp01(r.routeRisk * 0.8 + etaPenalty * 0.2);
+        return {
+          ...r,
+          finalScore,
+          etaPenalty,
+        };
+      })
+      .sort((a, b) => a.finalScore - b.finalScore);
+
+    const recommended = scored[0];
+    const alternatives = scored.slice(1, 3);
+
+    const hazards = buildRouteHazards(recommended.path, incidents as any[], restrictedZones);
+
+    const rerouteRequired = recommended.routeRisk >= 0.7 || hazards.some((h) => h.severity === 'high');
+
+    res.json({
+      success: true,
+      data: {
+        recommendedRoute: serializeRoute(recommended),
+        alternatives: alternatives.map(serializeRoute),
+        hazards,
+        rerouteRequired,
+        metadata: {
+          provider: candidates[0]?.provider || 'synthetic',
+          mode,
+          generatedAt: new Date().toISOString(),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Safe route recommendation error:', error.message);
+    res.status(500).json({
+      error: 'Safe route recommendation failed',
+      message: error.response?.data?.error || error.message,
+    });
+  }
+});
+
 // Area Risk Summary (convenience endpoint)
 aiRouter.get('/risk/area/:lat/:lng', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -462,6 +592,331 @@ function getCurrentTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
   if (hour >= 12 && hour < 17) return 'afternoon';
   if (hour >= 17 && hour < 22) return 'evening';
   return 'night';
+}
+
+type LatLng = { lat: number; lng: number };
+
+type RouteCandidate = {
+  id: string;
+  provider: 'google' | 'synthetic';
+  etaMinutes: number;
+  distanceMeters: number;
+  path: LatLng[];
+};
+
+async function fetchRouteCandidates(origin: LatLng, destination: LatLng, mode: string): Promise<RouteCandidate[]> {
+  const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!googleApiKey) {
+    return buildSyntheticCandidates(origin, destination);
+  }
+
+  const modeMap: Record<string, string> = {
+    walking: 'walking',
+    trekking: 'walking',
+    driving: 'driving',
+  };
+
+  const response = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
+    params: {
+      origin: `${origin.lat},${origin.lng}`,
+      destination: `${destination.lat},${destination.lng}`,
+      mode: modeMap[mode] || 'walking',
+      alternatives: 'true',
+      key: googleApiKey,
+    },
+    timeout: 8000,
+  });
+
+  const routes = Array.isArray(response.data?.routes) ? response.data.routes : [];
+  const candidates = routes.slice(0, 4).map((route: any, index: number) => {
+    const points = decodePolyline(route.overview_polyline?.points || '');
+    const legs = Array.isArray(route.legs) ? route.legs : [];
+    const distanceMeters = legs.reduce((sum: number, leg: any) => sum + (leg.distance?.value || 0), 0);
+    const etaMinutes = Math.max(1, Math.round(legs.reduce((sum: number, leg: any) => sum + (leg.duration?.value || 0), 0) / 60));
+    return {
+      id: `google-${index + 1}`,
+      provider: 'google' as const,
+      etaMinutes,
+      distanceMeters,
+      path: points.length ? points : [origin, destination],
+    };
+  });
+
+  return candidates;
+}
+
+function buildSyntheticCandidates(origin: LatLng, destination: LatLng): RouteCandidate[] {
+  const baseDistance = haversineMeters(origin, destination);
+  const offsets = [0, 0.0025, -0.0025];
+
+  return offsets.map((offset, idx) => {
+    const path = interpolateRoute(origin, destination, offset);
+    const distance = polylineDistance(path);
+    const etaMinutes = Math.max(1, Math.round(distance / 70));
+    return {
+      id: `synthetic-${idx + 1}`,
+      provider: 'synthetic' as const,
+      etaMinutes,
+      distanceMeters: Math.max(distance, baseDistance),
+      path,
+    };
+  });
+}
+
+function interpolateRoute(origin: LatLng, destination: LatLng, offset: number): LatLng[] {
+  const points: LatLng[] = [];
+  const steps = 12;
+  const dx = destination.lng - origin.lng;
+  const dy = destination.lat - origin.lat;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const wave = Math.sin(t * Math.PI) * offset;
+    points.push({
+      lat: origin.lat + (destination.lat - origin.lat) * t + ny * wave,
+      lng: origin.lng + (destination.lng - origin.lng) * t + nx * wave,
+    });
+  }
+
+  return points;
+}
+
+function decodePolyline(encoded: string): LatLng[] {
+  if (!encoded) return [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates: LatLng[] = [];
+
+  while (index < encoded.length) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lng += dlng;
+
+    coordinates.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+
+  return coordinates;
+}
+
+function estimateWeatherRisk(weather: any, path: LatLng[]): number {
+  const fallback = deterministicNoise(path[0], 0.15, 0.45);
+  if (!weather) return fallback;
+
+  const rain = clamp01((weather.rain_intensity ?? 20) / 100);
+  const flood = clamp01(weather.flood_risk ?? 0.2);
+  const visibilityPenalty = clamp01(1 - ((weather.visibility_km ?? 8) / 20));
+  return clamp01(rain * 0.4 + flood * 0.45 + visibilityPenalty * 0.15);
+}
+
+function estimateTerrainRisk(terrain: any, path: LatLng[]): number {
+  const fallback = deterministicNoise(path[path.length - 1], 0.2, 0.5);
+  if (!terrain) return fallback;
+
+  const slope = clamp01(terrain.slope_risk ?? 0.4);
+  const forest = clamp01(terrain.forest_density ?? 0.3);
+  const landslide = clamp01(terrain.landslide_risk ?? 0.25);
+  return clamp01(slope * 0.45 + forest * 0.15 + landslide * 0.4);
+}
+
+function estimateIncidentRisk(path: LatLng[], incidents: any[]): number {
+  if (!incidents.length) return 0.05;
+
+  let weightedHits = 0;
+  for (const incident of incidents) {
+    const coords = incident?.location?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) continue;
+    const point = { lat: coords[1], lng: coords[0] };
+    const distance = distancePointToPolylineMeters(point, path);
+    if (distance > 600) continue;
+
+    const severityWeight: Record<string, number> = {
+      low: 0.4,
+      medium: 0.7,
+      high: 1,
+      critical: 1.3,
+    };
+    const sev = severityWeight[incident.severity || 'medium'] || 0.7;
+    const proximity = clamp01(1 - distance / 600);
+    weightedHits += sev * proximity;
+  }
+
+  return clamp01(weightedHits / 8);
+}
+
+function estimateRestrictedPenalty(path: LatLng[], zones: Array<{ center: LatLng; radius_m: number }>): number {
+  if (!zones.length) return 0;
+  let worst = 0;
+  for (const point of path) {
+    for (const zone of zones) {
+      const d = haversineMeters(point, zone.center);
+      if (d <= zone.radius_m) {
+        const inZonePenalty = clamp01(1 - d / zone.radius_m);
+        if (inZonePenalty > worst) worst = inZonePenalty;
+      }
+    }
+  }
+  return worst;
+}
+
+async function getAIRouteRisk(path: LatLng[]): Promise<number | null> {
+  try {
+    if (path.length < 2) return null;
+    const waypointStride = Math.max(2, Math.floor(path.length / 6));
+    const waypoints = path.filter((_, idx) => idx > 0 && idx < path.length - 1 && idx % waypointStride === 0);
+
+    const response = await axios.post(
+      `${AI_SERVICE_URL}/api/risk/predict`,
+      {
+        route: {
+          start: path[0],
+          end: path[path.length - 1],
+          waypoints,
+        },
+        time_of_day: getCurrentTimeOfDay(),
+      },
+      { timeout: 7000 }
+    );
+    const score = Number(response.data?.risk_score);
+    if (Number.isNaN(score)) return null;
+    return clamp01(score / 100);
+  } catch {
+    return null;
+  }
+}
+
+function serializeRoute(route: any) {
+  return {
+    id: route.id,
+    provider: route.provider,
+    etaMinutes: route.etaMinutes,
+    distanceMeters: Math.round(route.distanceMeters),
+    riskScore: round3(route.routeRisk),
+    finalScore: round3(route.finalScore),
+    riskBreakdown: route.breakdown,
+    path: route.path.map((p: LatLng) => ({ latitude: p.lat, longitude: p.lng })),
+  };
+}
+
+function buildRouteHazards(path: LatLng[], incidents: any[], zones: Array<{ center: LatLng; radius_m: number; name?: string }>) {
+  const hazards: Array<{ id: string; lat: number; lng: number; severity: 'low' | 'medium' | 'high'; label: string }> = [];
+
+  incidents.slice(0, 150).forEach((incident: any, idx: number) => {
+    const coords = incident?.location?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) return;
+    const point = { lat: coords[1], lng: coords[0] };
+    const distance = distancePointToPolylineMeters(point, path);
+    if (distance > 350) return;
+    hazards.push({
+      id: `incident-${incident._id || idx}`,
+      lat: point.lat,
+      lng: point.lng,
+      severity: (incident.severity || 'medium') as 'low' | 'medium' | 'high',
+      label: incident.type || 'Incident hotspot',
+    });
+  });
+
+  zones.forEach((zone, idx) => {
+    if (path.some((p) => haversineMeters(p, zone.center) <= zone.radius_m)) {
+      hazards.push({
+        id: `restricted-${idx}`,
+        lat: zone.center.lat,
+        lng: zone.center.lng,
+        severity: 'high',
+        label: zone.name || 'Restricted zone',
+      });
+    }
+  });
+
+  return hazards.slice(0, 25);
+}
+
+function getDefaultRestrictedZones() {
+  return [
+    { center: { lat: 28.7041, lng: 77.1025 }, radius_m: 350, name: 'Restricted perimeter' },
+    { center: { lat: 30.3165, lng: 78.0322 }, radius_m: 450, name: 'Landslide caution zone' },
+  ];
+}
+
+function distancePointToPolylineMeters(point: LatLng, path: LatLng[]): number {
+  if (path.length < 2) return 999999;
+  let best = Number.MAX_SAFE_INTEGER;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const d = distancePointToSegmentMeters(point, path[i], path[i + 1]);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+function distancePointToSegmentMeters(p: LatLng, a: LatLng, b: LatLng): number {
+  const ax = a.lng;
+  const ay = a.lat;
+  const bx = b.lng;
+  const by = b.lat;
+  const px = p.lng;
+  const py = p.lat;
+
+  const abx = bx - ax;
+  const aby = by - ay;
+  const ab2 = abx * abx + aby * aby || 1;
+  const apx = px - ax;
+  const apy = py - ay;
+  const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / ab2));
+
+  const closest = { lat: ay + aby * t, lng: ax + abx * t };
+  return haversineMeters(p, closest);
+}
+
+function haversineMeters(a: LatLng, b: LatLng): number {
+  const R = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function polylineDistance(path: LatLng[]): number {
+  let total = 0;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    total += haversineMeters(path[i], path[i + 1]);
+  }
+  return total;
+}
+
+function deterministicNoise(anchor: LatLng, min: number, max: number): number {
+  const raw = Math.abs(Math.sin(anchor.lat * 12.9898 + anchor.lng * 78.233));
+  return min + (max - min) * (raw % 1);
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function round3(value: number) {
+  return Math.round(value * 1000) / 1000;
 }
 
 export { aiRouter };
