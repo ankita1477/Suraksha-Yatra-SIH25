@@ -17,7 +17,7 @@ import { getSocket } from './lib/socket';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE || 'http://127.0.0.1:4000';
+const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
 
 function DashboardApp() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
