@@ -94,7 +94,7 @@ score from 0 (very safe) to 100 (high-risk). Prefer routes with scores below 30.
 class GeminiRAG:
     def __init__(self, api_key: str, db_client=None):
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.0-flash"
+        self.model = "gemini-2.5-flash"
         self.system_instruction = (
             "You are Suraksha AI, a friendly and knowledgeable safety assistant "
             "for the Suraksha Yatra personal safety app. "
