@@ -6,7 +6,8 @@ Uses Google Gemini with Retrieval-Augmented Generation:
 """
 import logging
 from datetime import datetime, timedelta
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -92,22 +93,20 @@ score from 0 (very safe) to 100 (high-risk). Prefer routes with scores below 30.
 # ── GeminiRAG class ─────────────────────────────────────────────────────────────
 class GeminiRAG:
     def __init__(self, api_key: str, db_client=None):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=(
-                "You are Suraksha AI, a friendly and knowledgeable safety assistant "
-                "for the Suraksha Yatra personal safety app. "
-                "Your role is to help users with safety advice, emergency guidance, "
-                "app features, and real-time safety information. "
-                "Always be empathetic, concise, and focused on user safety. "
-                "If someone is in immediate danger, always tell them to press the panic button "
-                "and call 112 first before anything else. "
-                "Respond in the same language the user writes in (Hindi or English)."
-            )
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-2.0-flash"
+        self.system_instruction = (
+            "You are Suraksha AI, a friendly and knowledgeable safety assistant "
+            "for the Suraksha Yatra personal safety app. "
+            "Your role is to help users with safety advice, emergency guidance, "
+            "app features, and real-time safety information. "
+            "Always be empathetic, concise, and focused on user safety. "
+            "If someone is in immediate danger, always tell them to press the panic button "
+            "and call 112 first before anything else. "
+            "Respond in the same language the user writes in (Hindi or English)."
         )
         self.db_client = db_client
-        # Per-session chat history stored in memory (session_id → list of messages)
+        # Per-session chat history stored in memory (session_id → list of Content objects)
         self._sessions: dict = {}
 
     # ── Live context from MongoDB ───────────────────────────────────────────────
@@ -182,30 +181,44 @@ class GeminiRAG:
         """
         try:
             if session_id not in self._sessions:
-                # Start a new chat with RAG context as the first user turn
+                # Initialize session history with RAG context as first exchange
                 context_prompt = self._build_context_prompt(message)
-                history = [
-                    {
-                        "role": "user",
-                        "parts": [context_prompt]
-                    },
-                    {
-                        "role": "model",
-                        "parts": [
+                self._sessions[session_id] = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text=context_prompt)]
+                    ),
+                    types.Content(
+                        role="model",
+                        parts=[types.Part(text=(
                             "Understood. I'm Suraksha AI, your personal safety assistant. "
                             "I have the app's knowledge base and current safety data loaded. "
                             "How can I help you stay safe today?"
-                        ]
-                    }
+                        ))]
+                    ),
                 ]
-                self._sessions[session_id] = self.model.start_chat(history=history)
 
-            chat_session = self._sessions[session_id]
-            response = chat_session.send_message(message)
-            return {
-                "response": response.text,
-                "session_id": session_id
-            }
+            history = self._sessions[session_id]
+            # Append the new user message
+            history.append(types.Content(role="user", parts=[types.Part(text=message)]))
+
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=history,
+                config=types.GenerateContentConfig(
+                    system_instruction=self.system_instruction,
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                )
+            )
+            reply = response.text
+            # Append model response to history
+            history.append(types.Content(role="model", parts=[types.Part(text=reply)]))
+            # Keep history bounded to last 20 turns (40 entries)
+            if len(history) > 42:
+                self._sessions[session_id] = history[:2] + history[-40:]
+
+            return {"response": reply, "session_id": session_id}
         except Exception as e:
             logger.error(f"Gemini chat error: {e}")
             raise
@@ -216,7 +229,15 @@ class GeminiRAG:
         try:
             context = self._build_context_prompt(question)
             prompt = f"{context}\n\nUser question: {question}"
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=self.system_instruction,
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                )
+            )
             return response.text
         except Exception as e:
             logger.error(f"Gemini ask error: {e}")
