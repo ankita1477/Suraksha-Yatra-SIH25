@@ -1,55 +1,8 @@
 import * as Notifications from 'expo-notifications';
-import React, { useEffect, useState, useRef, ErrorInfo } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert, TouchableOpacity, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-// On web, react-native-maps can break for this version; guard usage.
-let MapView: any = null;
-let Marker: any = null;
-let Circle: any = null;
-let Polyline: any = null;
-let LocalTile: any = null;
-let PROVIDER_GOOGLE: any = null;
-
-// Safer map import with error handling
-try {
-  if (Platform.OS !== 'web') {
-    const maps = require('react-native-maps');
-    MapView = maps.default;
-    Marker = maps.Marker;
-    Circle = maps.Circle;
-    Polyline = maps.Polyline;
-    LocalTile = maps.LocalTile;
-    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-  }
-} catch (mapError) {
-  console.warn('react-native-maps not available:', mapError);
-}
-
-// Error boundary to catch native map crashes
-class MapErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(_error: Error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('MapErrorBoundary caught error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
-}
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, Platform, Alert, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { sendLocationUpdate } from '../../services/locationService';
 import SafeZoneService, { SafeZone, SafetyStatus } from '../../services/safeZoneService';
@@ -62,15 +15,27 @@ import {
 import socketService from '../../services/socketService';
 import useAuthStore from '../../state/authStore';
 import SafeAreaWrapper from '../../components/SafeAreaWrapper';
-import { colors, typography, spacing, commonStyles, borderRadius, shadows } from '../../utils/theme';
-import { wp, hp, isSmallDevice, TOUCH_TARGET_SIZE } from '../../utils/responsive';
-import { cacheTouristAreaTiles, getOfflineTilePathTemplate } from '../../services/offline/offlineTiles';
-import { isOnline, subscribeNetwork } from '../../services/offline/networkService';
-import {
-  fetchSafeRouteRecommendation,
-  LatLng,
-  SafeRouteResponse,
-} from '../../services/safeRouteService';
+import { useNavigation } from '@react-navigation/native';
+
+const { width: SW } = Dimensions.get('window');
+
+// Light theme colors matching HomeScreen
+const C = {
+  bg: '#F8FAF5',
+  card: '#FFFFFF',
+  green: '#2D6A4F',
+  greenLight: '#B7E4C7',
+  greenPale: '#D8F3DC',
+  greenDark: '#1B4332',
+  accent: '#40916C',
+  text: '#1B1B1B',
+  textSecondary: '#6B7280',
+  border: '#1B1B1B',
+  red: '#DC2626',
+  orange: '#F59E0B',
+  blue: '#3B82F6',
+  purple: '#8B5CF6',
+};
 
 interface PanicAlert {
   _id: string;
@@ -84,6 +49,7 @@ interface PanicAlert {
 
 export default function MapScreen() {
   const { token, user } = useAuthStore();
+  const navigation = useNavigation();
   const [region, setRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null>(null);
   const [status, setStatus] = useState<string>('');
   const [incidents, setIncidents] = useState<IncidentData[]>([]);
@@ -92,10 +58,6 @@ export default function MapScreen() {
   const [safeZones, setSafeZones] = useState<SafeZone[]>([]);
   const [safetyStatus, setSafetyStatus] = useState<SafetyStatus | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
-  const [networkOnline, setNetworkOnline] = useState(isOnline());
-  const [routeDestination, setRouteDestination] = useState<LatLng | null>(null);
-  const [safeRouteData, setSafeRouteData] = useState<SafeRouteResponse | null>(null);
-  const [routeLoading, setRouteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -152,53 +114,6 @@ export default function MapScreen() {
     }
   };
 
-  const recommendRoute = async (destination: LatLng) => {
-    if (!region || !token || !user) {
-      return;
-    }
-
-    setRouteLoading(true);
-    try {
-      const response = await fetchSafeRouteRecommendation({
-        origin: {
-          latitude: region.latitude,
-          longitude: region.longitude,
-        },
-        destination,
-        mode: 'trekking',
-        weather: {
-          rain_intensity: networkOnline ? 35 : 50,
-          flood_risk: networkOnline ? 0.25 : 0.4,
-          visibility_km: networkOnline ? 8 : 5,
-        },
-        terrain: {
-          slope_risk: 0.4,
-          forest_density: 0.35,
-          landslide_risk: 0.3,
-        },
-      });
-
-      setSafeRouteData(response);
-      setStatus(`🧭 Safest route risk ${(response.recommendedRoute.riskScore * 100).toFixed(0)}%`);
-
-      if (response.rerouteRequired) {
-        Alert.alert('Route Warning', 'Current route has elevated risk. A safer alternative is recommended.');
-      }
-    } catch (routeError) {
-      console.error('Safe route recommendation failed:', routeError);
-      Alert.alert('Route Error', 'Could not calculate a safe route right now. Please try again.');
-    } finally {
-      setRouteLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribeNetwork = subscribeNetwork(setNetworkOnline);
-    return () => {
-      unsubscribeNetwork();
-    };
-  }, []);
-
   useEffect(() => {
     // Start entrance animations
     Animated.parallel([
@@ -243,22 +158,6 @@ export default function MapScreen() {
         };
         setRegion(newRegion);
         setIsInitialized(true);
-
-        // Warm a small local tile cache around the user for offline map continuity.
-        if (networkOnline) {
-          const delta = 0.03;
-          cacheTouristAreaTiles(
-            {
-              minLat: loc.coords.latitude - delta,
-              minLon: loc.coords.longitude - delta,
-              maxLat: loc.coords.latitude + delta,
-              maxLon: loc.coords.longitude + delta,
-            },
-            [13, 14]
-          ).catch((tileError) => {
-            console.warn('Offline tile cache warmup failed:', tileError);
-          });
-        }
 
         // Load all incident data
         await loadIncidentData(loc.coords.latitude, loc.coords.longitude);
@@ -377,27 +276,13 @@ export default function MapScreen() {
       }
     };
 
-    const handleRouteDangerAlert = (event: { reason?: string }) => {
-      if (!routeDestination) {
-        return;
-      }
-
-      Alert.alert(
-        'Route Became Risky',
-        event?.reason || 'Conditions changed. Recomputing a safer path.'
-      );
-      recommendRoute(routeDestination);
-    };
-
     socketService.on('incident', handleNewIncident);
     socketService.on('panic_alert', handleNewPanicAlert);
-    socketService.on('route_danger_alert', handleRouteDangerAlert);
 
     return () => {
       if (interval) clearInterval(interval);
       socketService.off('incident', handleNewIncident);
       socketService.off('panic_alert', handleNewPanicAlert);
-      socketService.off('route_danger_alert', handleRouteDangerAlert);
       safeZoneService.cleanup();
     };
   }, []);
@@ -454,10 +339,12 @@ export default function MapScreen() {
   // Show loading while initializing
   if (!isInitialized) {
     return (
-      <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+      <SafeAreaWrapper backgroundColor={C.bg} statusBarStyle="dark-content">
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#ff4d4f" />
-          <Text style={styles.loadingText}>Initializing map...</Text>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color={C.green} />
+            <Text style={styles.loadingText}>Initializing map...</Text>
+          </View>
         </View>
       </SafeAreaWrapper>
     );
@@ -466,318 +353,166 @@ export default function MapScreen() {
   // Show error state
   if (error) {
     return (
-      <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+      <SafeAreaWrapper backgroundColor={C.bg} statusBarStyle="dark-content">
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>⚠️ Map Error</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton} 
-            onPress={() => {
-              setError(null);
-              setIsInitialized(false);
-              // Trigger reinitialization
-            }}
-          >
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+          <View style={styles.errorCard}>
+            <Ionicons name="warning-outline" size={48} color={C.orange} />
+            <Text style={styles.errorTitle}>Map Error</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => {
+                setError(null);
+                setIsInitialized(false);
+              }}
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaWrapper>
     );
   }
 
-  if (!region) return <View style={styles.loading}><ActivityIndicator color="#ff4d4f" /></View>;
-
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.webFallback}>
-        <Text style={styles.webTitle}>Map Unavailable on Web Preview</Text>
-        <Text style={styles.webText}>Open this project in Expo Go / Emulator to view the live map and location status.</Text>
-        {status ? <Text style={styles.statusText}>{status}</Text> : null}
-        <Text style={styles.webText}>
-          Socket: {socketConnected ? '🟢 Connected' : '🔴 Disconnected'}
-        </Text>
-        <Text style={styles.webText}>
-          Incidents: {incidents.length} | Alerts: {panicAlerts.length}
-        </Text>
-      </View>
-    );
-  }
+  if (!region) return <View style={styles.loading}><ActivityIndicator color={C.green} /></View>;
 
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
+    <SafeAreaWrapper backgroundColor={C.bg} statusBarStyle="dark-content">
       <View style={styles.container}>
-        {/* Header Section - Matching HomeScreen Style */}
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
+        {/* ── Header ── */}
+        <Animated.View
+          style={[styles.header, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}
         >
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Safety Map</Text>
-            <Text style={styles.headerSubtitle}>
-              {networkOnline ? 'Real-time monitoring' : 'Offline Safety Mode'}
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={20} color={C.text} />
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.headerTitle}>Safety Map</Text>
+              <Text style={styles.headerSub}>Real-time monitoring</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={refreshData}
+            disabled={refreshing}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={refreshing ? 'sync' : 'refresh'} size={20} color={C.green} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* ── Status Banner ── */}
+        {status ? (
+          <View style={[
+            styles.statusBanner,
+            safetyStatus?.withinSafeZone
+              ? { backgroundColor: C.greenPale, borderColor: C.green }
+              : { backgroundColor: '#FEF3C7', borderColor: '#D97706' },
+          ]}>
+            <Ionicons
+              name={safetyStatus?.withinSafeZone ? 'shield-checkmark' : 'warning-outline'}
+              size={18}
+              color={safetyStatus?.withinSafeZone ? C.green : '#D97706'}
+            />
+            <Text style={[
+              styles.statusBannerTxt,
+              { color: safetyStatus?.withinSafeZone ? C.greenDark : '#92400E' },
+            ]}>
+              {status}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* ── Map ── */}
+        <View style={styles.mapContainer}>
+          <MapView
+            style={styles.map}
+            initialRegion={region}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+          >
+            <Marker
+              coordinate={region}
+              title="You"
+              description="Current Location"
+              pinColor="#3B82F6"
+            />
+            {incidents.map((incident) => (
+              <Marker
+                key={incident._id}
+                coordinate={{
+                  latitude: incident.location.coordinates[1],
+                  longitude: incident.location.coordinates[0],
+                }}
+                title={`${incident.type.toUpperCase()} Incident`}
+                description={incident.description || `${incident.severity} severity`}
+                pinColor={getMarkerColor(incident.severity)}
+              />
+            ))}
+            {Array.isArray(panicAlerts) && panicAlerts.map((alert) => (
+              <Marker
+                key={alert._id}
+                coordinate={{ latitude: alert.lat, longitude: alert.lng }}
+                title="🆘 PANIC ALERT"
+                description={alert.message || `Emergency - ${alert.acknowledged ? 'Acknowledged' : 'Active'}`}
+                pinColor={alert.acknowledged ? '#22c55e' : '#dc2626'}
+              />
+            ))}
+            {safeZones.map((zone) => (
+              <Circle
+                key={zone._id}
+                center={{ latitude: zone.center.lat, longitude: zone.center.lng }}
+                radius={zone.radius}
+                strokeColor="rgba(34,197,94,0.8)"
+                fillColor="rgba(34,197,94,0.15)"
+                strokeWidth={2}
+              />
+            ))}
+            {safeZones.map((zone) => (
+              <Marker
+                key={`center-${zone._id}`}
+                coordinate={{ latitude: zone.center.lat, longitude: zone.center.lng }}
+                title={`🛡️ ${zone.name}`}
+                description={zone.description || `Safe zone - ${zone.radius}m`}
+                pinColor="#22c55e"
+              />
+            ))}
+          </MapView>
+        </View>
+
+        {/* ── Bottom Stats Panel ── */}
+        <Animated.View style={[styles.bottomPanel, { opacity: fadeAnim }]}>
+          <View style={styles.statsRow}>
+            <View style={[styles.statCard, { backgroundColor: '#FECACA' }]}>
+              <Ionicons name="alert-circle" size={20} color={C.red} />
+              <Text style={[styles.statNum, { color: C.red }]}>{incidents.length}</Text>
+              <Text style={styles.statLabel}>Incidents</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: '#FDE68A' }]}>
+              <Ionicons name="megaphone" size={20} color="#D97706" />
+              <Text style={[styles.statNum, { color: '#D97706' }]}>{recentAlerts.length}</Text>
+              <Text style={styles.statLabel}>Alerts</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: C.greenPale }]}>
+              <Ionicons name="shield-checkmark" size={20} color={C.green} />
+              <Text style={[styles.statNum, { color: C.green }]}>{safeZones.length}</Text>
+              <Text style={styles.statLabel}>Safe Zones</Text>
+            </View>
+          </View>
+
+          {/* Connection status */}
+          <View style={styles.connRow}>
+            <View style={[styles.connDot, { backgroundColor: socketConnected ? '#22c55e' : C.red }]} />
+            <Text style={styles.connTxt}>
+              {socketConnected ? 'Live Connected' : 'Disconnected'}
             </Text>
           </View>
         </Animated.View>
-
-        {/* Map container */}
-        <View style={styles.mapContainer}>
-          <MapErrorBoundary
-            fallback={
-              <View style={styles.mapFallback}>
-                <Text style={styles.mapFallbackText}>📍 Map Unavailable</Text>
-                <Text style={styles.mapFallbackSubtext}>
-                  The map could not be loaded. Please check your Google Maps API key 
-                  or restart the app.
-                </Text>
-              </View>
-            }
-          >
-          {MapView && region ? (
-            <MapView 
-              style={styles.map} 
-              initialRegion={region}
-              provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-              mapType={networkOnline ? 'standard' : 'none'}
-              showsUserLocation={true}
-              showsMyLocationButton={true}
-              onLongPress={(event: any) => {
-                const destination = {
-                  latitude: event.nativeEvent.coordinate.latitude,
-                  longitude: event.nativeEvent.coordinate.longitude,
-                };
-                setRouteDestination(destination);
-                recommendRoute(destination);
-              }}
-              onMapReady={() => console.log('Map is ready')}
-            >
-              {!networkOnline && LocalTile ? (
-                <LocalTile
-                  pathTemplate={getOfflineTilePathTemplate()}
-                  tileSize={256}
-                />
-              ) : null}
-
-              {/* User location marker */}
-              {Marker && (
-                <Marker 
-                  coordinate={region} 
-                  title="You" 
-                  description="Current Location"
-                  pinColor="#2563eb"
-                />
-              )}
-
-              {/* Safe route destination marker */}
-              {Marker && routeDestination && (
-                <Marker
-                  coordinate={routeDestination}
-                  title="Destination"
-                  description="Long-press map to change destination"
-                  pinColor="#a855f7"
-                />
-              )}
-
-              {/* Recommended safe route polyline */}
-              {Polyline && safeRouteData?.recommendedRoute && (
-                <Polyline
-                  coordinates={safeRouteData.recommendedRoute.path}
-                  strokeWidth={6}
-                  strokeColor="#22c55e"
-                />
-              )}
-
-              {/* Alternative route polylines */}
-              {Polyline && safeRouteData?.alternatives?.map((route) => (
-                <Polyline
-                  key={route.id}
-                  coordinates={route.path}
-                  strokeWidth={3}
-                  strokeColor="rgba(255,255,255,0.6)"
-                />
-              ))}
-
-              {/* Route risk hazards */}
-              {Marker && safeRouteData?.hazards?.map((hazard) => (
-                <Marker
-                  key={hazard.id}
-                  coordinate={{ latitude: hazard.lat, longitude: hazard.lng }}
-                  title={hazard.label}
-                  description={`Severity: ${hazard.severity}`}
-                  pinColor={hazard.severity === 'high' ? '#dc2626' : hazard.severity === 'medium' ? '#f59e0b' : '#22c55e'}
-                />
-              ))}
-              
-              {/* Incident markers */}
-              {Marker && incidents.map((incident) => (
-                <Marker
-                  key={incident._id}
-                  coordinate={{
-                    latitude: incident.location.coordinates[1],
-                    longitude: incident.location.coordinates[0],
-                  }}
-                  title={`${incident.type.toUpperCase()} Incident`}
-                  description={incident.description || `${incident.severity} severity incident`}
-                  pinColor={getMarkerColor(incident.severity)}
-                />
-              ))}
-
-              {/* Panic alert markers */}
-              {Marker && Array.isArray(panicAlerts) && panicAlerts.map((alert) => (
-                <Marker
-                  key={alert._id}
-                  coordinate={{
-                    latitude: alert.lat,
-                    longitude: alert.lng,
-                  }}
-                  title="🆘 PANIC ALERT"
-                  description={alert.message || `Emergency alert - ${alert.acknowledged ? 'Acknowledged' : 'Awaiting response'}`}
-                  pinColor={alert.acknowledged ? "#22c55e" : "#dc2626"}
-                />
-              ))}
-
-              {/* Safe zone circles */}
-              {Circle && safeZones.map((zone) => (
-                <Circle
-                  key={zone._id}
-                  center={{
-                    latitude: zone.center.lat,
-                    longitude: zone.center.lng,
-                  }}
-                  radius={zone.radius}
-                  strokeColor="rgba(34, 197, 94, 0.8)"
-                  fillColor="rgba(34, 197, 94, 0.2)"
-                  strokeWidth={2}
-                />
-              ))}
-
-              {/* Safe zone center markers */}
-              {Marker && safeZones.map((zone) => (
-                <Marker
-                  key={`center-${zone._id}`}
-                  coordinate={{
-                    latitude: zone.center.lat,
-                    longitude: zone.center.lng,
-                  }}
-                  title={`🛡️ ${zone.name}`}
-                  description={zone.description || `Safe zone - ${zone.radius}m radius`}
-                  pinColor="#22c55e"
-                />
-              ))}
-            </MapView>
-          ) : (
-            <View style={styles.mapFallback}>
-              <Text style={styles.mapFallbackText}>📍 Map Unavailable</Text>
-              <Text style={styles.mapFallbackSubtext}>
-                Maps are not supported on this device. 
-                Current location and safety features are still active.
-              </Text>
-            </View>
-          )}
-          </MapErrorBoundary>
-        </View>
-        
-        {/* Modern status cards */}
-        {status && (
-          <Animated.View style={[styles.statusCard, { opacity: fadeAnim }]}>
-            <LinearGradient
-              colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
-              style={styles.statusGradient}
-            >
-              <Text style={styles.statusText}>{status}</Text>
-            </LinearGradient>
-          </Animated.View>
-        )}
-
-        {/* Safe route recommendation card */}
-        {safeRouteData?.recommendedRoute && (
-          <Animated.View style={[styles.routeCard, { opacity: fadeAnim }]}>
-            <LinearGradient
-              colors={['rgba(16,185,129,0.85)', 'rgba(5,150,105,0.75)']}
-              style={styles.routeCardGradient}
-            >
-              <Text style={styles.routeCardTitle}>AI Safe Route</Text>
-              <Text style={styles.routeCardText}>
-                Risk {(safeRouteData.recommendedRoute.riskScore * 100).toFixed(0)}% | ETA {safeRouteData.recommendedRoute.etaMinutes} min
-              </Text>
-              <Text style={styles.routeCardHint}>Long-press map to set destination and re-evaluate.</Text>
-            </LinearGradient>
-          </Animated.View>
-        )}
-        
-        {/* Bottom info panel */}
-        <Animated.View style={[styles.bottomPanel, { opacity: fadeAnim }]}>
-          <LinearGradient
-            colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.6)']}
-            style={styles.panelGradient}
-          >
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{incidents.length}</Text>
-                <Text style={styles.statLabel}>Incidents</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{recentAlerts.length}</Text>
-                <Text style={styles.statLabel}>Alerts</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{safeZones.length}</Text>
-                <Text style={styles.statLabel}>Safe Zones</Text>
-              </View>
-            </View>
-            
-            <View style={styles.connectionStatus}>
-              <View style={[styles.statusDot, { backgroundColor: socketConnected ? '#22c55e' : '#ef4444' }]} />
-              <Text style={styles.connectionText}>
-                {socketConnected ? 'Connected' : 'Disconnected'}
-              </Text>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
-        {/* Modern refresh button */}
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={refreshData}
-          disabled={refreshing}
-        >
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.refreshGradient}
-          >
-            <Text style={styles.refreshText}>
-              {refreshing ? '🔄' : '↻'}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Safe route trigger button */}
-        <TouchableOpacity
-          style={styles.routeButton}
-          onPress={() => {
-            if (!region) {
-              return;
-            }
-            const fallbackDestination = routeDestination || {
-              latitude: region.latitude + 0.01,
-              longitude: region.longitude + 0.01,
-            };
-            setRouteDestination(fallbackDestination);
-            recommendRoute(fallbackDestination);
-          }}
-          disabled={routeLoading}
-        >
-          <LinearGradient
-            colors={['#16a34a', '#15803d']}
-            style={styles.refreshGradient}
-          >
-            <Text style={styles.refreshText}>{routeLoading ? '...' : '🧭'}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
     </SafeAreaWrapper>
   );
@@ -786,241 +521,238 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: C.bg,
   },
+
+  /* Header */
   header: {
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: C.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   headerTitle: {
-    ...typography.heading2,
-    color: colors.text,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
+    fontSize: 24,
+    fontWeight: '900',
+    color: C.text,
+    letterSpacing: -0.3,
   },
-  headerSubtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  mapContainer: {
-    flex: 1,
-    margin: wp(3),
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  map: { 
-    flex: 1 
-  },
-  statusCard: {
-    position: 'absolute',
-    top: hp(15),
-    left: wp(5),
-    right: wp(5),
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  statusGradient: {
-    paddingVertical: hp(1.5),
-    paddingHorizontal: wp(4),
-  },
-  statusText: { 
-    color: '#ffffff', 
-    textAlign: 'center', 
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  routeCard: {
-    position: 'absolute',
-    top: hp(22),
-    left: wp(5),
-    right: wp(5),
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  routeCardGradient: {
-    paddingVertical: hp(1.2),
-    paddingHorizontal: wp(4),
-  },
-  routeCardTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  routeCardText: {
-    color: '#ffffff',
-    fontSize: 12,
+  headerSub: {
+    fontSize: 13,
+    color: C.textSecondary,
+    fontWeight: '500',
     marginTop: 2,
   },
-  routeCardHint: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    marginTop: 4,
+  refreshBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: C.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
-  bottomPanel: {
-    position: 'absolute',
-    bottom: hp(2),
-    left: wp(5),
-    right: wp(5),
-    borderRadius: borderRadius.lg,
+
+  /* Status Banner */
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  statusBannerTxt: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+
+  /* Map Container */
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 20,
+    borderRadius: 18,
     overflow: 'hidden',
-    ...shadows.medium,
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
   },
-  panelGradient: {
-    paddingVertical: hp(2),
-    paddingHorizontal: wp(4),
+  map: {
+    flex: 1,
+  },
+
+  /* Bottom Panel */
+  bottomPanel: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: hp(1),
+    gap: 10,
   },
-  statItem: {
+  statCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
-  statNumber: {
-    color: '#ffffff',
+  statNum: {
     fontSize: 18,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
+    fontWeight: '900',
     marginTop: 2,
   },
-  connectionStatus: {
+  statLabel: {
+    fontSize: 10,
+    color: C.textSecondary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  connRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 10,
   },
-  statusDot: {
+  connDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: spacing.xs,
+    marginRight: 6,
   },
-  connectionText: {
-    color: 'rgba(255,255,255,0.8)',
+  connTxt: {
     fontSize: 12,
+    color: C.textSecondary,
+    fontWeight: '600',
   },
-  refreshButton: {
-    position: 'absolute',
-    top: hp(10),
-    right: wp(5),
-    width: wp(12),
-    height: wp(12),
-    borderRadius: wp(6),
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  routeButton: {
-    position: 'absolute',
-    top: hp(18),
-    right: wp(5),
-    width: wp(12),
-    height: wp(12),
-    borderRadius: wp(6),
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  refreshGradient: {
+
+  /* Loading */
+  loading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: C.bg,
   },
-  refreshText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loading: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    backgroundColor: colors.background,
-  },
-  webFallback: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: spacing.xl, 
-    backgroundColor: colors.background,
-  },
-  webTitle: { 
-    color: '#ffffff', 
-    fontSize: 20, 
-    fontWeight: '600', 
-    marginBottom: spacing.md,
-  },
-  webText: { 
-    color: colors.textSecondary, 
-    textAlign: 'center', 
-    lineHeight: 20, 
-    marginBottom: spacing.sm,
+  loadingCard: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 5,
   },
   loadingText: {
-    color: colors.text,
-    marginTop: spacing.md,
+    color: C.text,
+    marginTop: 16,
     fontSize: 16,
+    fontWeight: '700',
   },
+
+  /* Error */
   errorContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
+    padding: 30,
+    backgroundColor: C.bg,
+  },
+  errorCard: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 5,
+    width: '100%',
   },
   errorTitle: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: spacing.md,
-    textAlign: 'center',
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 12,
+    marginBottom: 8,
   },
   errorText: {
-    color: colors.textSecondary,
-    fontSize: 16,
+    color: C.textSecondary,
+    fontSize: 14,
     textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 24,
+    marginBottom: 20,
+    lineHeight: 20,
   },
   retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    ...shadows.small,
+    backgroundColor: C.green,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   retryText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  mapFallback: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-  },
-  mapFallbackText: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  mapFallbackSubtext: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

@@ -75,9 +75,9 @@ export function loadConfig(): AppConfig {
     appEnvironment: getConfigValue('APP_ENVIRONMENT', 'development'),
 
     // API Configuration
-  // Local dev: point to machine running `npm run dev` in backend/
-  apiBaseUrl: 'http://10.6.185.106:4000/api',
-  wsBaseUrl: 'ws://10.6.185.106:4000',
+  // Production domain endpoints (sme.ankitarahi.space)
+  apiBaseUrl: 'https://sme.ankitarahi.space/api',
+  wsBaseUrl: 'wss://sme.ankitarahi.space',
 
     // Feature Flags
     enableLocationTracking: getConfigValue('ENABLE_LOCATION_TRACKING', true, 'boolean'),

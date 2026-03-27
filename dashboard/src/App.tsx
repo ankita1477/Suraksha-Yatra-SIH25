@@ -10,6 +10,7 @@ import { SafeZoneManagement } from './components/SafeZoneManagement';
 import { NotificationCenter } from './components/NotificationCenter';
 import { DashboardAnalytics } from './components/DashboardAnalytics';
 import { ToastProvider, useToast, showSuccess, showError, showWarning, showInfo } from './components/ToastProvider';
+import { ChatBot } from './components/ChatBot';
 import { LoginPanel } from './auth';
 import { useAuthToken } from './hooks/useAuthToken';
 import { getSocket } from './lib/socket';
@@ -473,6 +474,7 @@ function App() {
   return (
     <ToastProvider>
       <DashboardApp />
+      <ChatBot />
     </ToastProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,146 +12,85 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 import { sendPanicAlert as sendPanicAlertAPI } from '../../services/alertsService';
 import { sendEmergencyNotification } from '../../services/notificationService';
 import SafeAreaWrapper from '../../components/SafeAreaWrapper';
-import { colors, typography, spacing, commonStyles, borderRadius, shadows } from '../../utils/theme';
-import { wp, hp, isSmallDevice, TOUCH_TARGET_SIZE, normalize } from '../../utils/responsive';
 
-interface PanicScreenProps {
-  navigation: {
-    goBack: () => void;
-    navigate: (screen: string, params?: any) => void;
-  };
-}
+const C = {
+  bg: '#F8FAF5',
+  card: '#FFFFFF',
+  green: '#2D6A4F',
+  greenLight: '#B7E4C7',
+  greenPale: '#D8F3DC',
+  greenDark: '#1B4332',
+  accent: '#40916C',
+  text: '#1B1B1B',
+  textSecondary: '#6B7280',
+  border: '#1B1B1B',
+  red: '#DC2626',
+  redDark: '#991B1B',
+  redPale: '#FECACA',
+  yellowPale: '#FEF3C7',
+};
 
-export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScreenProps) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Panic'>;
+
+export default function PanicScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
 
-  // Animation values
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(50))[0];
-  const scaleAnim = useState(new Animated.Value(0.9))[0];
-  const pulseAnim = useState(new Animated.Value(1))[0];
-  const emergencyPulse = useState(new Animated.Value(1))[0];
-  const warningFlash = useState(new Animated.Value(0))[0];
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(24)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     checkLocationPermission();
-    
-    // Start entrance animations
+
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
     ]).start();
 
-    // Start continuous animations
-    startEmergencyPulse();
-    startWarningFlash();
+    pulseRef.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.06, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.0, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    pulseRef.current.start();
+
+    return () => {
+      pulseRef.current?.stop();
+    };
   }, []);
-
-  const startEmergencyPulse = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(emergencyPulse, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emergencyPulse, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  const startWarningFlash = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(warningFlash, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(warningFlash, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
 
   const checkLocationPermission = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status === 'granted');
-    } catch (error) {
-      console.error('Error checking location permission:', error);
+    } catch {
+      setLocationPermission(false);
     }
   };
 
-  const handlePanicPress = async () => {
-    // Immediate feedback animation
-    Animated.sequence([
-      Animated.timing(emergencyPulse, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(emergencyPulse, {
-        toValue: 1.2,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
+  const handlePanicPress = () => {
     Alert.alert(
-      '🚨 Emergency Alert',
-      'This will send an emergency alert to authorities and emergency contacts. Are you sure?',
+      'Emergency Alert',
+      'This will send an emergency alert to authorities and emergency contacts. Continue?',
       [
-        { 
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => {
-            // Reset animation
-            Animated.timing(emergencyPulse, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }).start();
-          }
-        },
-        {
-          text: 'Send Alert',
-          style: 'destructive',
-          onPress: sendPanicAlert
-        }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send Alert', style: 'destructive', onPress: sendPanicAlert },
       ]
     );
   };
 
   const sendPanicAlert = async () => {
     setIsLoading(true);
-    Vibration.vibrate([500, 200, 500]);
-    
+    Vibration.vibrate([500, 180, 450]);
+
     try {
       let location = null;
       if (locationPermission) {
@@ -160,37 +99,24 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
         });
       }
 
-      // Send panic alert to backend
       const panicPayload = {
         lat: location?.coords.latitude || 0,
         lng: location?.coords.longitude || 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       await sendPanicAlertAPI(panicPayload);
-
-      // Send local notification
       await sendEmergencyNotification('panic', {
-        latitude: location?.coords.latitude || 0,
-        longitude: location?.coords.longitude || 0,
+        latitude: panicPayload.lat,
+        longitude: panicPayload.lng,
       });
 
-      Alert.alert(
-        'Alert Sent',
-        'Emergency alert has been sent successfully. Help is on the way.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack()
-          }
-        ]
-      );
-
+      Alert.alert('Alert Sent', 'Emergency alert has been sent. Help is on the way.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (error) {
-      console.error('Error sending panic alert:', error);
-      
-      let errorMessage = 'Failed to send emergency alert. Please try again or contact emergency services directly.';
-      
+      let errorMessage = 'Failed to send emergency alert. Try again or call emergency services directly.';
+
       if (error instanceof Error) {
         if (error.message.includes('Network')) {
           errorMessage = 'Network error. Please check your connection and try again.';
@@ -198,7 +124,7 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
           errorMessage = 'Authentication error. Please log in again.';
         }
       }
-      
+
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
@@ -206,326 +132,255 @@ export const PanicScreen: React.FC<PanicScreenProps> = ({ navigation }: PanicScr
   };
 
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
-      <Animated.View 
-        style={[
-          styles.container,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
-      >
-        {/* Header - HomeScreen Style */}
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
-        >
-          <View style={styles.headerContent}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
+    <SafeAreaWrapper backgroundColor={C.bg} statusBarStyle="dark-content">
+      <Animated.View style={[s.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <View style={s.header}>
+          <View style={s.headerLeft}>
+            <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={22} color={C.text} />
             </TouchableOpacity>
-            
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>Emergency Alert</Text>
-              <Text style={styles.headerSubtitle}>Tap to send emergency signal</Text>
+            <View>
+              <Text style={s.headerTitle}>Emergency Alert</Text>
+              <Text style={s.headerSub}>Tap once to send emergency signal</Text>
             </View>
-            
-            <Animated.View 
-              style={[
-                styles.warningIndicator,
-                {
-                  opacity: warningFlash.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 1]
-                  })
-                }
-              ]}
-            >
-              <Ionicons name="warning" size={20} color="#dc2626" />
-            </Animated.View>
           </View>
-        </Animated.View>
+          <View style={s.warnChip}>
+            <Ionicons name="warning" size={16} color={C.red} />
+          </View>
+        </View>
 
-        <ScrollView 
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Emergency Alert Card */}
-          <Animated.View 
-            style={[
-              styles.alertCard,
-              { transform: [{ scale: scaleAnim }] }
-            ]}
-          >
-            <LinearGradient
-              colors={['#fef3c7', '#f59e0b']}
-              style={styles.alertGradient}
-            >
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <Ionicons name="warning" size={48} color="#b45309" />
-              </Animated.View>
-              <Text style={styles.alertTitle}>Emergency Panic Button</Text>
-              <Text style={styles.alertDescription}>
-                Press the emergency button below in case of immediate danger. 
-                This will alert authorities and emergency contacts with your exact location.
-              </Text>
-            </LinearGradient>
-          </Animated.View>
+        <ScrollView style={s.content} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={s.alertCard}>
+            <View style={s.alertPatternWrap}>
+              <View style={[s.alertRing, s.alertRing1]} />
+              <View style={[s.alertRing, s.alertRing2]} />
+              <View style={[s.alertRing, s.alertRing3]} />
+            </View>
+            <Ionicons name="alert-circle" size={44} color={C.redDark} />
+            <Text style={s.alertTitle}>Panic Button</Text>
+            <Text style={s.alertDescription}>
+              Use this only in immediate danger. It sends your live location to emergency contacts and services.
+            </Text>
+          </View>
 
-          {/* Status Section */}
-          <Animated.View 
-            style={[
-              styles.statusCard,
-              { opacity: fadeAnim }
-            ]}
-          >
-            <Text style={styles.statusTitle}>System Status</Text>
-            <View style={styles.statusItem}>
-              <View style={styles.statusIconContainer}>
-                <Ionicons 
-                  name={locationPermission ? "location" : "location-outline"} 
-                  size={20} 
-                  color={locationPermission ? colors.success : colors.error} 
+          <View style={s.statusCard}>
+            <Text style={s.cardTitle}>System Status</Text>
+            <View style={s.statusRow}>
+              <View style={[s.statusIcon, { backgroundColor: locationPermission ? C.greenPale : C.redPale }]}>
+                <Ionicons
+                  name={locationPermission ? 'location' : 'location-outline'}
+                  size={18}
+                  color={locationPermission ? C.green : C.red}
                 />
               </View>
-              <View style={styles.statusTextContainer}>
-                <Text style={styles.statusLabel}>Location Services</Text>
-                <Text style={[styles.statusValue, { 
-                  color: locationPermission ? colors.success : colors.error 
-                }]}>
-                  {locationPermission ? "Active" : "Disabled"}
+              <View style={{ flex: 1 }}>
+                <Text style={s.statusLabel}>Location Services</Text>
+                <Text style={[s.statusValue, { color: locationPermission ? C.green : C.red }]}>
+                  {locationPermission ? 'Active' : 'Disabled'}
                 </Text>
               </View>
-              <View style={[
-                styles.statusDot, 
-                { backgroundColor: locationPermission ? colors.success : colors.error }
-              ]} />
+              <View style={[s.statusDot, { backgroundColor: locationPermission ? C.green : C.red }]} />
             </View>
-          </Animated.View>
+          </View>
 
-          {/* Emergency Button */}
-          <Animated.View 
-            style={[
-              styles.emergencyButtonContainer,
-              { transform: [{ scale: scaleAnim }] }
-            ]}
-          >
-            <TouchableOpacity
-              style={[
-                styles.emergencyButton,
-                isLoading && styles.emergencyButtonDisabled,
-                { transform: [{ scale: emergencyPulse }] }
-              ]}
-              onPress={handlePanicPress}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={isLoading ? ['#6b7280', '#4b5563'] : ['#dc2626', '#991b1b']}
-                style={styles.emergencyGradient}
+          <View style={s.emergencyWrap}>
+            <Animated.View style={{ transform: [{ scale: pulse }] }}>
+              <TouchableOpacity
+                style={[s.emergencyBtn, isLoading && s.emergencyBtnDisabled]}
+                onPress={handlePanicPress}
+                disabled={isLoading}
+                activeOpacity={0.82}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="large" color="white" />
+                  <ActivityIndicator size="large" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Animated.View style={{ 
-                      transform: [{ 
-                        rotate: emergencyPulse.interpolate({
-                          inputRange: [1, 1.1],
-                          outputRange: ['0deg', '10deg']
-                        }) 
-                      }] 
-                    }}>
-                      <Ionicons name="alert-circle" size={64} color="white" />
-                    </Animated.View>
-                    <Text style={styles.emergencyButtonText}>EMERGENCY</Text>
-                    <Text style={styles.emergencyButtonSubtext}>Tap to activate</Text>
+                    <Ionicons name="alert-circle" size={56} color="#FFFFFF" />
+                    <Text style={s.emergencyBtnText}>EMERGENCY</Text>
+                    <Text style={s.emergencyBtnSub}>Tap to activate</Text>
                   </>
                 )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
 
-          {/* Info Section */}
-          <Animated.View 
-            style={[
-              styles.infoCard,
-              { opacity: fadeAnim }
-            ]}
-          >
-            <Text style={styles.infoTitle}>What happens when you activate:</Text>
-            
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons name="location" size={16} color={colors.primary} />
+          <View style={s.infoCard}>
+            <Text style={s.cardTitle}>What Happens Next</Text>
+
+            {[
+              { icon: 'location', text: 'Your exact location is shared instantly' },
+              { icon: 'people', text: 'Emergency contacts are notified' },
+              { icon: 'shield-checkmark', text: 'Authorities are alerted' },
+              { icon: 'radio', text: 'Live tracking is activated' },
+            ].map((item, idx) => (
+              <View key={idx} style={s.infoRow}>
+                <View style={s.infoIconWrap}>
+                  <Ionicons name={item.icon as any} size={15} color={C.green} />
+                </View>
+                <Text style={s.infoText}>{item.text}</Text>
               </View>
-              <Text style={styles.infoText}>Your exact location is sent to authorities</Text>
-            </View>
-            
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons name="people" size={16} color={colors.primary} />
-              </View>
-              <Text style={styles.infoText}>Emergency contacts are notified immediately</Text>
-            </View>
-            
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
-              </View>
-              <Text style={styles.infoText}>Security personnel are dispatched</Text>
-            </View>
-            
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons name="radio" size={16} color={colors.primary} />
-              </View>
-              <Text style={styles.infoText}>Real-time tracking is activated</Text>
-            </View>
-          </Animated.View>
+            ))}
+          </View>
         </ScrollView>
       </Animated.View>
     </SafeAreaWrapper>
   );
-};
+}
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: C.bg,
   },
-  
-  // Header Section - HomeScreen Style
+
   header: {
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  headerContent: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerTitleContainer: {
-    flex: 1,
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: spacing.md,
+    gap: 10,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: C.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   headerTitle: {
-    ...typography.heading2,
-    color: colors.text,
-    fontWeight: '700',
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '800',
   },
-  headerSubtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontSize: 14,
-    marginTop: spacing.xs,
+  headerSub: {
+    color: C.textSecondary,
+    fontSize: 12,
+    marginTop: 1,
   },
-  backButton: {
-    padding: spacing.sm,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
+  warnChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: C.redPale,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
-  warningIndicator: {
-    padding: spacing.sm,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
-  },
-  
-  // Content
+
   content: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: 16,
+    paddingBottom: 28,
   },
-  
-  // Alert Card
+
   alertCard: {
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing.lg,
-    overflow: 'hidden',
-    shadowColor: '#f59e0b',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  alertGradient: {
-    padding: spacing.xl,
+    backgroundColor: C.yellowPale,
+    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    marginBottom: 14,
+    overflow: 'hidden',
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 5,
   },
+  alertPatternWrap: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  alertRing: {
+    position: 'absolute',
+    borderWidth: 1.5,
+    borderColor: 'rgba(180, 83, 9, 0.25)',
+    borderRadius: 999,
+  },
+  alertRing1: { width: 120, height: 120, right: -18, top: -14 },
+  alertRing2: { width: 88, height: 88, right: -2, top: 2 },
+  alertRing3: { width: 62, height: 62, right: 14, top: 18 },
   alertTitle: {
-    ...typography.heading2,
-    color: '#b45309',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 6,
+    color: C.redDark,
+    fontSize: 20,
+    fontWeight: '800',
+    zIndex: 2,
   },
   alertDescription: {
-    ...typography.body,
-    color: '#92400e',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
+    color: '#92400E',
+    fontSize: 14,
+    zIndex: 2,
   },
-  
-  // Status Card
+
   statusCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
     elevation: 4,
   },
-  statusTitle: {
-    ...typography.bodyMedium,
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: spacing.md,
+  cardTitle: {
+    color: C.text,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 10,
   },
-  statusItem: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statusIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  statusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  statusTextContainer: {
-    flex: 1,
+    borderWidth: 2,
+    borderColor: C.border,
+    marginRight: 10,
   },
   statusLabel: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '700',
   },
   statusValue: {
-    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
     marginTop: 2,
   },
   statusDot: {
@@ -533,83 +388,77 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  
-  // Emergency Button
-  emergencyButtonContainer: {
+
+  emergencyWrap: {
     alignItems: 'center',
-    marginVertical: spacing.xxl,
+    marginVertical: 20,
   },
-  emergencyButton: {
-    width: isSmallDevice() ? wp(60) : wp(55),
-    height: isSmallDevice() ? wp(60) : wp(55),
-    borderRadius: isSmallDevice() ? wp(30) : wp(27.5),
-    overflow: 'hidden',
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.6,
-    shadowRadius: 30,
-    elevation: 12,
-  },
-  emergencyButtonDisabled: {
-    opacity: 0.6,
-  },
-  emergencyGradient: {
-    flex: 1,
+  emergencyBtn: {
+    width: 212,
+    height: 212,
+    borderRadius: 106,
+    backgroundColor: C.red,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 3,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
   },
-  emergencyButtonText: {
-    ...typography.heading2,
-    color: 'white',
-    marginTop: spacing.md,
-    fontWeight: '800',
-    fontSize: normalize(24),
+  emergencyBtnDisabled: {
+    opacity: 0.72,
+    backgroundColor: '#6B7280',
   },
-  emergencyButtonSubtext: {
-    ...typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: spacing.xs,
+  emergencyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 10,
+    letterSpacing: 0.8,
   },
-  
-  // Info Card
+  emergencyBtnSub: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+
   infoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 2.5,
+    borderColor: C.border,
+    shadowColor: C.border,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
     elevation: 4,
   },
-  infoTitle: {
-    ...typography.bodyMedium,
-    color: colors.text,
-    marginBottom: spacing.md,
-    fontWeight: '600',
-  },
-  infoItem: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 10,
   },
-  infoIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+  infoIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: C.greenPale,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    borderWidth: 2,
+    borderColor: C.border,
+    marginRight: 10,
   },
   infoText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     flex: 1,
-    lineHeight: 20,
+    color: C.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });
-
-export default PanicScreen;

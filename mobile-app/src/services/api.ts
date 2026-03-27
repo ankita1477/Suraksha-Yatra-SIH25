@@ -1,6 +1,12 @@
 import axios, { AxiosError } from 'axios';
-import { getItem, setItem } from '../utils/secureStore';
+import { getItem, setItem, deleteItem } from '../utils/secureStore';
 import { config, log } from '../config/env';
+
+let unauthorizedHandler: (() => void | Promise<void>) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void | Promise<void>) | null) {
+  unauthorizedHandler = handler;
+}
 
 export const api = axios.create({
   baseURL: config.apiBaseUrl,
@@ -19,17 +25,18 @@ let refreshing: Promise<string | null> | null = null;
 async function refreshToken(): Promise<string | null> {
   if (!refreshing) {
     refreshing = (async () => {
-  const refreshToken = await getItem('refreshToken');
+      const refreshToken = await getItem('refreshToken');
       if (!refreshToken) return null;
       try {
         const res = await axios.post(config.apiBaseUrl + '/auth/refresh', { refreshToken });
         const { token, refreshToken: newRefresh } = res.data;
-  if (token) await setItem('token', token);
-  if (newRefresh) await setItem('refreshToken', newRefresh);
+        if (token) await setItem('token', token);
+        if (newRefresh) await setItem('refreshToken', newRefresh);
         return token || null;
       } catch {
-  await setItem('token', '');
-  await setItem('refreshToken', '');
+        await deleteItem('token');
+        await deleteItem('refreshToken');
+        await deleteItem('user');
         return null;
       } finally {
         refreshing = null;
@@ -47,6 +54,10 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
       original.headers = original.headers || {};
       original.headers['Authorization'] = `Bearer ${newToken}`;
       return api.request(original);
+    }
+
+    if (unauthorizedHandler) {
+      await unauthorizedHandler();
     }
   }
   return Promise.reject(error);

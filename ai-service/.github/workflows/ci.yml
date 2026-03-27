@@ -39,13 +39,12 @@ jobs:
         sleep 10
         curl -f http://localhost:5000/api/health || exit 1
 
-  deploy:
+  deploy-note:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
-    - name: Deploy to Render
+    - name: Deployment Target
       run: |
-        echo "Deployment triggered to Render"
-        # Render auto-deploys from main branch
+        echo "Tests passed on main. Deploy AI service to AWS EC2 using ai-service/DEPLOYMENT.md"

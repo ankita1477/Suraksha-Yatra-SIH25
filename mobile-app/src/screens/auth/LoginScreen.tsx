@@ -1,208 +1,104 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform, 
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   Animated,
+  Image,
   Dimensions,
-  Easing
 } from 'react-native';
-import useAuthStore from '../../state/authStore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import SafeAreaWrapper from '../../components/SafeAreaWrapper';
-import { colors, typography, spacing, borderRadius } from '../../utils/theme';
-import { wp, hp, normalize } from '../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import SafeAreaWrapper from '../../components/SafeAreaWrapper';
+import useAuthStore from '../../state/authStore';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 import { checkBackendHealth, checkAiHealth } from '../../services/healthService';
 import { getApiBaseUrl } from '../../config/env';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: SW } = Dimensions.get('window');
+const IMG_AUTH = require('../../../assets/generated/auth_hero_rog.jpg');
 
-export default function LoginScreen({ navigation }: Props) {
+const C = {
+  page: '#FFFDF7',
+  ink: '#171717',
+  muted: '#666',
+  green: '#2D6A4F',
+  orange: '#F97316',
+  red: '#EF4444',
+  card: '#FFFFFF',
+  line: '#171717',
+  cloudGreen: '#D8F3DC',
+  cloudOrange: '#FED7AA',
+  cloudRed: '#FECACA',
+};
+
+export default function LoginScreen(_: Props) {
   const { login, register, loading, mode, toggleMode } = useAuthStore();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  // Debug panel state
+
   const [debugOpen, setDebugOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
   const [aiStatus, setAiStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
-  const [apiMessage, setApiMessage] = useState<string>('');
-  const [aiMessage, setAiMessage] = useState<string>('');
-  const [baseUrl, setBaseUrl] = useState<string>('');
+  const [apiMessage, setApiMessage] = useState('');
+  const [aiMessage, setAiMessage] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const inputFocusAnim = useRef(new Animated.Value(0)).current;
-  const buttonPressAnim = useRef(new Animated.Value(1)).current;
-  const floatingParticles = useRef(
-    Array.from({ length: 6 }, () => ({
-      x: new Animated.Value(Math.random() * screenWidth),
-      y: new Animated.Value(Math.random() * screenHeight),
-      opacity: new Animated.Value(Math.random() * 0.3 + 0.1),
-      scale: new Animated.Value(Math.random() * 0.5 + 0.5),
-    }))
-  ).current;
-
-  // Get current time for greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
+  const fade = useRef(new Animated.Value(0)).current;
+  const drop = useRef(new Animated.Value(18)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Start entrance animations
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideUpAnim, {
-        toValue: 0,
-        duration: 1000,
-        easing: Easing.out(Easing.back(1.2)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+      Animated.timing(fade, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(drop, { toValue: 0, duration: 420, useNativeDriver: true }),
     ]).start();
 
-    // Start floating particles animation
-    startFloatingParticles();
-    // Load base URL for debug panel
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.04, duration: 1300, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.0, duration: 1300, useNativeDriver: true }),
+      ])
+    ).start();
+
     (async () => {
-      try { setBaseUrl(await getApiBaseUrl()); } catch {}
+      try {
+        setBaseUrl(await getApiBaseUrl());
+      } catch {}
     })();
-  }, []);
+  }, [drop, fade, pulse]);
 
-  const startFloatingParticles = () => {
-    floatingParticles.forEach((particle, index) => {
-      const animateParticle = () => {
-        Animated.parallel([
-          Animated.timing(particle.x, {
-            toValue: Math.random() * screenWidth,
-            duration: 8000 + Math.random() * 4000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.y, {
-            toValue: Math.random() * screenHeight,
-            duration: 6000 + Math.random() * 6000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(particle.opacity, {
-                toValue: 0.6,
-                duration: 3000,
-                easing: Easing.inOut(Easing.sin),
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.opacity, {
-                toValue: 0.1,
-                duration: 3000,
-                easing: Easing.inOut(Easing.sin),
-                useNativeDriver: true,
-              }),
-            ])
-          ),
-        ]).start(() => animateParticle());
-      };
-      // Stagger particle start times
-      setTimeout(animateParticle, index * 1000);
-    });
-  };
-
-  const handleInputFocus = () => {
-    Animated.timing(inputFocusAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleInputBlur = () => {
-    Animated.timing(inputFocusAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleButtonPress = () => {
-    Animated.sequence([
-      Animated.timing(buttonPressAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonPressAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onSubmit();
-    });
-  };
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  })();
 
   const onSubmit = async () => {
     setError(null);
-    
-    // Basic validation
-    if (!email.trim()) {
-      setError('Please enter your email address');
-      return;
-    }
-    
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    
-    if (!password.trim()) {
-      setError('Please enter your password');
-      return;
-    }
-    
-    if (mode === 'register' && password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-    
+
+    if (!email.trim()) return setError('Please enter your email address');
+    if (!email.includes('@')) return setError('Please enter a valid email address');
+    if (!password.trim()) return setError('Please enter your password');
+    if (mode === 'register' && password.length < 6) return setError('Password must be at least 6 characters long');
+
     try {
-      if (mode === 'login') {
-        await login(email, password);
-        // Don't navigate manually - let the auth state change trigger navigation
-      } else {
-        await register(email, password);
-        // Don't navigate manually - let the auth state change trigger navigation
-      }
+      if (mode === 'login') await login(email, password);
+      else await register(email, password);
     } catch (e: any) {
-      console.error('Auth error:', e);
-      setError(e.message || 'Authentication failed');
+      setError(e?.message || 'Authentication failed');
     }
   };
 
@@ -211,6 +107,7 @@ export default function LoginScreen({ navigation }: Props) {
     setAiStatus('checking');
     setApiMessage('');
     setAiMessage('');
+
     try {
       const backend = await checkBackendHealth();
       if (backend.ok) {
@@ -222,8 +119,9 @@ export default function LoginScreen({ navigation }: Props) {
       }
     } catch (e: any) {
       setApiStatus('fail');
-      setApiMessage(e.message || 'Backend check failed');
+      setApiMessage(e?.message || 'Backend check failed');
     }
+
     try {
       const ai = await checkAiHealth();
       if (ai.ok) {
@@ -235,494 +133,447 @@ export default function LoginScreen({ navigation }: Props) {
       }
     } catch (e: any) {
       setAiStatus('fail');
-      setAiMessage(e.message || 'AI check failed');
+      setAiMessage(e?.message || 'AI check failed');
     }
   };
 
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} statusBarStyle="light-content">
-      <View style={styles.container}>
-        {/* Floating Particles Background */}
-        {floatingParticles.map((particle, index) => (
-          <Animated.View
-            key={index}
-            style={[
-              styles.floatingParticle,
-              {
-                backgroundColor: index % 3 === 0 ? colors.cardYellow : 
-                                index % 3 === 1 ? colors.cardPurple : colors.cardPink,
-                transform: [
-                  { translateX: particle.x },
-                  { translateY: particle.y },
-                  { scale: particle.scale },
-                ],
-                opacity: particle.opacity,
-              },
-            ]}
-          />
-        ))}
+    <SafeAreaWrapper backgroundColor={C.page} statusBarStyle="dark-content">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Animated.View style={[s.wrap, { opacity: fade, transform: [{ translateY: drop }] }]}>
+            <View pointerEvents="none" style={s.bgDecor}>
+              <View style={[s.bgBlob, s.blobGreen]} />
+              <View style={[s.bgBlob, s.blobOrange]} />
+              <View style={[s.bgBlob, s.blobRed]} />
+            </View>
 
-        <KeyboardAvoidingView 
-          style={styles.keyboardView} 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Animated.View 
-              style={[
-                styles.content,
-                {
-                  opacity: fadeAnim,
-                  transform: [
-                    { translateY: slideUpAnim },
-                    { scale: scaleAnim }
-                  ]
-                }
-              ]}
-            >
-              {/* Logo and Title Section */}
-              <View style={styles.headerSection}>
-                <View style={[styles.logoContainer, { backgroundColor: colors.cardPink }]}>
-                  <Ionicons name="shield-checkmark" size={48} color={colors.background} />
-                </View>
-                
-                <Text style={styles.appTitle}>Suraksha Yatra</Text>
-                <Text style={styles.appSubtitle}>
-                  {mode === 'login' 
-                    ? `${getGreeting()}! Welcome back to your safety journey` 
-                    : `${getGreeting()}! Begin your journey with ultimate safety`
-                  }
-                </Text>
-              </View>
+            <View style={s.stageCard}>
+              <View style={s.stageTextZone}>
+                <Text style={s.kicker}>{greeting}</Text>
+                <Text style={s.title}>Your Safe Trip Starts Here</Text>
+                <Text style={s.subtitle}>Real-time AI safety, quick SOS, and trusted contacts in one place.</Text>
 
-              {/* Form Card */}
-              <View style={styles.formCard}>
-                <View style={styles.formGradient}>
-                  {/* Mode Toggle */}
-                  <View style={styles.modeToggle}>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeButton,
-                        mode === 'login' && styles.modeButtonActive
-                      ]}
-                      onPress={() => mode !== 'login' && toggleMode()}
-                    >
-                      <Text style={[
-                        styles.modeButtonText,
-                        mode === 'login' && styles.modeButtonTextActive
-                      ]}>
-                        Sign In
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeButton,
-                        mode === 'register' && styles.modeButtonActive
-                      ]}
-                      onPress={() => mode !== 'register' && toggleMode()}
-                    >
-                      <Text style={[
-                        styles.modeButtonText,
-                        mode === 'register' && styles.modeButtonTextActive
-                      ]}>
-                        Sign Up
-                      </Text>
-                    </TouchableOpacity>
+                <View style={s.tagsRow}>
+                  <View style={[s.tag, { backgroundColor: C.cloudGreen }]}>
+                    <Ionicons name="shield-checkmark" size={13} color={C.green} />
+                    <Text style={s.tagText}>Protected</Text>
                   </View>
-
-                  {/* Email Input */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Email Address</Text>
-                    <Animated.View style={[
-                      styles.inputContainer,
-                      {
-                        borderColor: inputFocusAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [colors.border, colors.cardYellow]
-                        })
-                      }
-                    ]}>
-                      <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Enter your email"
-                        placeholderTextColor={colors.textMuted}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
-                      />
-                    </Animated.View>
-                  </View>
-
-                  {/* Password Input */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Password</Text>
-                    <Animated.View style={[
-                      styles.inputContainer,
-                      {
-                        borderColor: inputFocusAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [colors.border, colors.cardPurple]
-                        })
-                      }
-                    ]}>
-                      <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Enter your password"
-                        placeholderTextColor={colors.textMuted}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
-                      />
-                      <TouchableOpacity 
-                        style={styles.eyeButton}
-                        onPress={() => setShowPassword(!showPassword)}
-                      >
-                        <Ionicons 
-                          name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                          size={20} 
-                          color={colors.textSecondary} 
-                        />
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-
-                  {/* Error Message */}
-                  {error && (
-                    <View style={styles.errorContainer}>
-                      <Ionicons name="alert-circle" size={16} color={colors.error} />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                  )}
-
-                  {/* Submit Button */}
-                  <Animated.View style={{ transform: [{ scale: buttonPressAnim }] }}>
-                    <TouchableOpacity
-                      style={styles.submitButton}
-                      onPress={handleButtonPress}
-                      disabled={loading}
-                    >
-                      <View style={[styles.submitGradient, { backgroundColor: colors.cardPink }]}>
-                        {loading ? (
-                          <ActivityIndicator size="small" color={colors.background} />
-                        ) : (
-                          <Text style={styles.submitButtonText}>
-                            {mode === 'login' ? 'Sign In' : 'Sign Up'}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  </Animated.View>
-
-                  {/* Additional Actions */}
-                  <View style={styles.additionalActions}>
-                    {mode === 'login' && (
-                      <TouchableOpacity style={styles.forgotPassword}>
-                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                      </TouchableOpacity>
-                    )}
+                  <View style={[s.tag, { backgroundColor: C.cloudOrange }]}>
+                    <Ionicons name="flash" size={13} color={C.orange} />
+                    <Text style={s.tagText}>Instant Alerts</Text>
                   </View>
                 </View>
               </View>
 
-              {/* Footer */}
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                  Your safety is our priority. Join thousands of users who trust Suraksha Yatra.
-                </Text>
-                {/* Debug Toggle */}
+              <Animated.View style={[s.stageImageShell, { transform: [{ scale: pulse }] }]}> 
+                <Image source={IMG_AUTH} style={s.stageImage} resizeMode="cover" />
+              </Animated.View>
+            </View>
+
+            <View style={s.authCard}>
+              <View style={s.ticketCutLeft} />
+              <View style={s.ticketCutRight} />
+
+              <View style={s.modeSwitch}>
                 <TouchableOpacity
-                  style={styles.debugToggle}
-                  onLongPress={() => setDebugOpen(o => !o)}
-                  delayLongPress={500}
+                  style={[s.modeBtn, mode === 'login' && { backgroundColor: C.green }]}
+                  onPress={() => mode !== 'login' && toggleMode()}
+                  activeOpacity={0.85}
                 >
-                  <Text style={styles.debugToggleText}>{debugOpen ? 'Hide Diagnostics' : 'Hold 0.5s for Diagnostics'}</Text>
+                  <Text style={[s.modeText, mode === 'login' && { color: '#fff' }]}>Sign In</Text>
                 </TouchableOpacity>
-                {debugOpen && (
-                  <View style={styles.debugPanel}>
-                    <Text style={styles.debugTitle}>Connectivity</Text>
-                    <Text style={styles.debugLine}>Base URL: <Text style={styles.debugMono}>{baseUrl}</Text></Text>
-                    <View style={styles.debugRow}>
-                      <Text style={styles.debugLine}>Backend: <StatusBadge status={apiStatus} /></Text>
-                      <Text style={styles.debugLine}>AI: <StatusBadge status={aiStatus} /></Text>
-                    </View>
-                    {(apiMessage || aiMessage) && (
-                      <View style={{ marginTop: 4 }}>
-                        {apiMessage ? <Text style={styles.debugMsg}>API: {apiMessage}</Text> : null}
-                        {aiMessage ? <Text style={styles.debugMsg}>AI: {aiMessage}</Text> : null}
-                      </View>
-                    )}
-                    <TouchableOpacity style={styles.debugButton} onPress={runHealthChecks} disabled={apiStatus==='checking' || aiStatus==='checking'}>
-                      <Text style={styles.debugButtonText}>{apiStatus==='checking' || aiStatus==='checking' ? 'Checking...' : 'Run Checks'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                <TouchableOpacity
+                  style={[s.modeBtn, mode === 'register' && { backgroundColor: C.orange }]}
+                  onPress={() => mode !== 'register' && toggleMode()}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[s.modeText, mode === 'register' && { color: '#fff' }]}>Sign Up</Text>
+                </TouchableOpacity>
               </View>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </View>
+
+              <Text style={s.inputLabel}>Email</Text>
+              <View style={s.inputBox}>
+                <Ionicons name="mail-outline" size={18} color={C.muted} />
+                <TextInput
+                  style={s.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor="#8A8A8A"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              <Text style={s.inputLabel}>Password</Text>
+              <View style={s.inputBox}>
+                <Ionicons name="lock-closed-outline" size={18} color={C.muted} />
+                <TextInput
+                  style={s.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter password"
+                  placeholderTextColor="#8A8A8A"
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(v => !v)}>
+                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color={C.muted} />
+                </TouchableOpacity>
+              </View>
+
+              {error ? (
+                <View style={s.errorRow}>
+                  <Ionicons name="alert-circle" size={16} color={C.red} />
+                  <Text style={s.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                style={[s.ctaBtn, { backgroundColor: mode === 'login' ? C.green : C.orange }, loading && { opacity: 0.7 }]}
+                onPress={onSubmit}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name={mode === 'login' ? 'log-in-outline' : 'person-add-outline'} size={18} color="#fff" />
+                    <Text style={s.ctaText}>{mode === 'login' ? 'Enter App' : 'Create Account'}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {mode === 'login' ? (
+                <TouchableOpacity style={s.forgotBtn} activeOpacity={0.8}>
+                  <Text style={s.forgotText}>Forgot password?</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <TouchableOpacity style={s.diagToggle} onLongPress={() => setDebugOpen(v => !v)} delayLongPress={500}>
+              <Text style={s.diagToggleText}>{debugOpen ? 'Hide Diagnostics' : 'Hold 0.5s for Diagnostics'}</Text>
+            </TouchableOpacity>
+
+            {debugOpen ? (
+              <View style={s.diagCard}>
+                <Text style={s.diagTitle}>Connectivity</Text>
+                <Text style={s.diagLine}>Base URL: <Text style={s.diagMono}>{baseUrl}</Text></Text>
+                <View style={s.diagRow}>
+                  <Text style={s.diagLine}>Backend: <StatusBadge status={apiStatus} /></Text>
+                  <Text style={s.diagLine}>AI: <StatusBadge status={aiStatus} /></Text>
+                </View>
+                {apiMessage ? <Text style={s.diagMsg}>API: {apiMessage}</Text> : null}
+                {aiMessage ? <Text style={s.diagMsg}>AI: {aiMessage}</Text> : null}
+                <TouchableOpacity style={s.diagBtn} onPress={runHealthChecks} disabled={apiStatus === 'checking' || aiStatus === 'checking'}>
+                  <Text style={s.diagBtnText}>{apiStatus === 'checking' || aiStatus === 'checking' ? 'Checking...' : 'Run Checks'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaWrapper>
   );
 }
 
-// Small inline status badge component
 const StatusBadge = ({ status }: { status: 'idle' | 'checking' | 'ok' | 'fail' }) => {
   const map: Record<string, { label: string; color: string }> = {
-    idle: { label: 'idle', color: '#666' },
-    checking: { label: '...', color: '#888' },
-    ok: { label: 'OK', color: '#16a34a' },
-    fail: { label: 'FAIL', color: '#dc2626' },
+    idle: { label: 'idle', color: '#6B7280' },
+    checking: { label: '...', color: '#9CA3AF' },
+    ok: { label: 'OK', color: '#16A34A' },
+    fail: { label: 'FAIL', color: '#DC2626' },
   };
   const d = map[status];
   return (
     <View style={{ backgroundColor: d.color, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 4 }}>
-      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>{d.label}</Text>
+      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{d.label}</Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  floatingParticle: {
-    position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
+const s = StyleSheet.create({
+  scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: 18,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
+  wrap: {
+    paddingHorizontal: 16,
   },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: hp(8),
+  bgDecor: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+  bgBlob: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.24,
   },
-  appTitle: {
-    fontSize: normalize(32),
+  blobGreen: { width: 180, height: 180, backgroundColor: C.green, top: -40, right: -30 },
+  blobOrange: { width: 160, height: 160, backgroundColor: C.orange, top: 260, left: -46 },
+  blobRed: { width: 180, height: 180, backgroundColor: C.red, bottom: 100, right: -42 },
+
+  stageCard: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: C.line,
+    shadowColor: C.line,
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 7,
+    padding: 12,
+    marginBottom: 12,
+  },
+  stageTextZone: {
+    marginBottom: 10,
+  },
+  kicker: {
+    fontSize: 12,
     fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-    letterSpacing: 1,
+    color: C.green,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  appSubtitle: {
-    fontSize: normalize(16),
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: normalize(24),
-    paddingHorizontal: spacing.lg,
+  title: {
+    fontSize: 27,
+    lineHeight: 30,
+    fontWeight: '900',
+    color: C.ink,
+    marginTop: 4,
   },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    marginBottom: hp(4),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+    color: C.muted,
+    marginTop: 6,
   },
-  formGradient: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surface,
-  },
-  modeToggle: {
+  tagsRow: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.lg,
-    padding: 4,
-    marginBottom: spacing.xl,
+    gap: 8,
+    marginTop: 10,
   },
-  modeButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-  },
-  modeButtonActive: {
-    backgroundColor: colors.vibrantYellow,
-  },
-  modeButtonText: {
-    fontSize: normalize(14),
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  modeButtonTextActive: {
-    color: colors.background,
-  },
-  inputGroup: {
-    marginBottom: spacing.lg,
-  },
-  inputLabel: {
-    fontSize: normalize(14),
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  inputContainer: {
+  tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.lg,
+    gap: 5,
+    borderWidth: 1.5,
+    borderColor: C.line,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  tagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.ink,
+  },
+  stageImageShell: {
+    width: '100%',
+    height: 188,
     borderWidth: 2,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    borderColor: C.line,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
-  inputIcon: {
-    marginRight: spacing.sm,
+  stageImage: {
+    width: '100%',
+    height: '100%',
   },
-  textInput: {
+
+  authCard: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: C.line,
+    shadowColor: C.line,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
+    padding: 14,
+    position: 'relative',
+  },
+  ticketCutLeft: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: C.page,
+    left: -8,
+    top: 34,
+    borderWidth: 2,
+    borderColor: C.line,
+  },
+  ticketCutRight: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: C.page,
+    right: -8,
+    top: 34,
+    borderWidth: 2,
+    borderColor: C.line,
+  },
+  modeSwitch: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: C.line,
+    padding: 4,
+    marginBottom: 12,
+  },
+  modeBtn: {
     flex: 1,
-    fontSize: normalize(16),
-    color: colors.text,
-    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderRadius: 8,
   },
-  eyeButton: {
-    padding: spacing.xs,
+  modeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.muted,
   },
-  errorContainer: {
+
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: C.ink,
+    marginBottom: 6,
+  },
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.lg,
+    backgroundColor: '#FFFDF7',
+    borderWidth: 2,
+    borderColor: C.line,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: C.ink,
+    paddingVertical: 12,
+    marginLeft: 7,
+  },
+
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.cloudRed,
+    borderWidth: 2,
+    borderColor: C.line,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
   errorText: {
-    fontSize: normalize(14),
-    color: colors.error,
-    marginLeft: spacing.sm,
+    color: C.red,
+    fontSize: 12,
+    fontWeight: '700',
     flex: 1,
   },
-  submitButton: {
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  submitGradient: {
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
+  ctaBtn: {
+    flexDirection: 'row',
     justifyContent: 'center',
-  },
-  submitButtonText: {
-    fontSize: normalize(16),
-    fontWeight: '700',
-    color: colors.background,
-  },
-  additionalActions: {
     alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    borderColor: C.line,
+    paddingVertical: 13,
+    shadowColor: C.line,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
-  forgotPassword: {
-    paddingVertical: spacing.sm,
+  ctaText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
-  forgotPasswordText: {
-    fontSize: normalize(14),
-    color: colors.vibrantPurple,
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  footerText: {
-    fontSize: normalize(12),
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: normalize(18),
-  },
-  debugToggle: {
-    marginTop: spacing.md,
+  forgotBtn: {
+    alignSelf: 'center',
+    marginTop: 10,
     paddingVertical: 4,
   },
-  debugToggleText: {
-    fontSize: normalize(10),
-    color: colors.textSecondary,
-    textAlign: 'center'
+  forgotText: {
+    color: C.orange,
+    fontSize: 12,
+    fontWeight: '800',
   },
-  debugPanel: {
-    marginTop: spacing.md,
-    width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+
+  diagToggle: {
+    alignSelf: 'center',
+    marginTop: 10,
+    paddingVertical: 4,
   },
-  debugTitle: {
-    fontSize: normalize(12),
+  diagToggleText: {
+    color: C.muted,
+    fontSize: 10,
     fontWeight: '700',
-    color: colors.text,
+  },
+  diagCard: {
+    marginTop: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: C.line,
+    padding: 10,
+  },
+  diagTitle: {
+    color: C.ink,
+    fontSize: 12,
+    fontWeight: '800',
     marginBottom: 4,
   },
-  debugRow: {
+  diagRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  debugLine: {
-    fontSize: normalize(11),
-    color: colors.textSecondary,
+  diagLine: {
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: '600',
   },
-  debugMono: {
+  diagMono: {
+    color: C.ink,
+    fontSize: 11,
+    fontWeight: '700',
     fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
-    fontSize: normalize(11),
-    color: colors.text,
   },
-  debugMsg: {
-    fontSize: normalize(10),
-    color: colors.textSecondary,
+  diagMsg: {
+    color: C.muted,
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 3,
   },
-  debugButton: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.vibrantPurple,
-    paddingVertical: 6,
-    borderRadius: borderRadius.sm,
-    alignItems: 'center'
+  diagBtn: {
+    marginTop: 8,
+    backgroundColor: '#111827',
+    borderRadius: 8,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: C.line,
   },
-  debugButtonText: {
-    color: colors.background,
-    fontSize: normalize(12),
-    fontWeight: '600'
-  }
+  diagBtnText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
 });

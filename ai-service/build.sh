@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for Render deployment - Python 3.11 only
+# Build script for production deployment - Python 3.11 only
 
 echo "Starting AI service build with Python 3.11..."
 

@@ -16,7 +16,7 @@ An advanced AI-powered service for the Suraksha Yatra safety application, provid
 - **Database**: MongoDB with PyMongo
 - **ML Libraries**: Scikit-learn, NumPy, SciPy, Pandas
 - **Geospatial**: GeoPy for location processing
-- **Deployment**: Render.com ready
+- **Deployment**: AWS EC2 + PM2 + Nginx ready
 
 ## 📋 Prerequisites
 
@@ -101,7 +101,7 @@ python setup_test.py
 
 ### Risk Prediction
 ```bash
-curl -X POST https://your-ai-service.onrender.com/api/risk/predict \
+curl -X POST http://YOUR_AWS_EC2_IP:5000/api/risk/predict \
   -H "Content-Type: application/json" \
   -d '{
     "latitude": 20.2961,
@@ -113,7 +113,7 @@ curl -X POST https://your-ai-service.onrender.com/api/risk/predict \
 
 ### Anomaly Detection
 ```bash
-curl -X POST https://your-ai-service.onrender.com/api/anomaly/detect \
+curl -X POST http://YOUR_AWS_EC2_IP:5000/api/anomaly/detect \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user123",
@@ -125,32 +125,18 @@ curl -X POST https://your-ai-service.onrender.com/api/anomaly/detect \
 
 ## 🌍 Deployment
 
-### Render.com Deployment
+### AWS EC2 Deployment
 
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial AI service commit"
-   git push origin main
-   ```
+1. **Deploy on EC2 using PM2**
+   - Follow `ai-service/DEPLOYMENT.md` for full steps.
 
-2. **Connect to Render**
-   - Go to [render.com](https://render.com)
-   - Create new Web Service
-   - Connect your GitHub repo
-   - Use these settings:
-     - **Build Command**: `pip install -r requirements.txt`
-     - **Start Command**: `python app.py`
-     - **Environment**: Python 3
-
-3. **Environment Variables on Render**
+2. **Environment Variables on EC2**
    ```
    AI_HOST=0.0.0.0
    AI_PORT=5000
    DEBUG=false
    MONGODB_URL=your_mongodb_atlas_connection_string
    MONGODB_DATABASE=suraksha
-   PYTHON_VERSION=3.9.16
    ```
 
 ### Environment Variables Guide

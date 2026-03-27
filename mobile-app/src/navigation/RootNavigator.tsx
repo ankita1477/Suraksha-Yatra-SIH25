@@ -8,6 +8,7 @@ import MapScreen from '../screens/main/MapScreen';
 import PanicScreen from '../screens/main/PanicScreen';
 import EmergencyContactsScreen from '../screens/main/EmergencyContactsScreen';
 import NotificationSettingsScreen from '../screens/main/NotificationSettingsScreen';
+import FeedbackScreen from '../screens/main/FeedbackScreen';
 import useAuthStore from '../state/authStore';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -19,6 +20,7 @@ export type RootStackParamList = {
   Panic: undefined;
   EmergencyContacts: undefined;
   NotificationSettings: undefined;
+  Feedback: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -62,6 +64,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Panic" component={PanicScreen} />
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+            <Stack.Screen name="Feedback" component={FeedbackScreen} />
           </>
         ) : (
           // Unauthenticated stack

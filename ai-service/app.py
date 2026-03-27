@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import logging
 from datetime import datetime, timedelta
 import numpy as np
@@ -6,6 +7,7 @@ from database.mongodb_client import MongoDBClient
 from ml_models.risk_predictor import RiskPredictor
 from ml_models.anomaly_detector import AnomalyDetector
 from ml_models.pattern_analyzer import PatternAnalyzer
+from chatbot.gemini_rag import GeminiRAG
 import config
 
 # Configure logging
@@ -13,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app)
 
 # Initialize services
 db_client = MongoDBClient()
@@ -20,7 +23,18 @@ risk_predictor = RiskPredictor(db_client)
 anomaly_detector = AnomalyDetector(db_client)
 pattern_analyzer = PatternAnalyzer(db_client)
 
+# Initialize Gemini RAG chatbot (lazy – only if key is configured)
+_chatbot: GeminiRAG | None = None
+def get_chatbot() -> GeminiRAG:
+    global _chatbot
+    if _chatbot is None:
+        if not config.GEMINI_API_KEY:
+            raise RuntimeError("GEMINI_API_KEY not configured")
+        _chatbot = GeminiRAG(api_key=config.GEMINI_API_KEY, db_client=db_client)
+    return _chatbot
+
 @app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({
@@ -285,6 +299,58 @@ def _assess_threat_level(location, user_profile, context):
         'factors': factors,
         'recommendations': recommendations
     }
+
+# ── Gemini RAG Chatbot endpoints ─────────────────────────────────────────────
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """
+    Conversational chatbot with RAG using Gemini.
+    Payload: { "message": str, "session_id": str (optional) }
+    Returns: { "response": str, "session_id": str }
+    """
+    try:
+        data = request.get_json()
+        if not data or not data.get('message', '').strip():
+            return jsonify({'error': 'message is required'}), 400
+
+        message = data['message'].strip()
+        # Limit message length to avoid prompt injection / abuse
+        if len(message) > 2000:
+            return jsonify({'error': 'Message too long (max 2000 characters)'}), 400
+
+        session_id = data.get('session_id', 'default')
+
+        bot = get_chatbot()
+        result = bot.chat(message=message, session_id=session_id)
+
+        return jsonify({
+            'response': result['response'],
+            'session_id': result['session_id'],
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except RuntimeError as e:
+        logger.error(f"Chatbot config error: {e}")
+        return jsonify({'error': str(e)}), 503
+    except Exception as e:
+        logger.error(f"Chat error: {e}")
+        return jsonify({'error': 'Failed to get response from AI'}), 500
+
+
+@app.route('/api/chat/clear', methods=['POST'])
+def clear_chat_session():
+    """Clear a chat session history. Payload: { "session_id": str }"""
+    try:
+        data = request.get_json() or {}
+        session_id = data.get('session_id', 'default')
+        bot = get_chatbot()
+        bot.clear_session(session_id)
+        return jsonify({'status': 'cleared', 'session_id': session_id})
+    except Exception as e:
+        logger.error(f"Clear session error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 
 if __name__ == '__main__':
     app.run(

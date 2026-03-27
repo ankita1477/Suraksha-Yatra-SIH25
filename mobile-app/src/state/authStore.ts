@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getItem, setItem, deleteItem } from '../utils/secureStore';
 import { loginRequest, registerRequest, AuthUser } from '../services/authService';
-import { api } from '../services/api';
+import { api, setUnauthorizedHandler } from '../services/api';
 
 interface AuthState {
   token: string | null;
@@ -32,92 +32,73 @@ const useAuthStore = create<AuthState>((set, get) => ({
   bootstrap: async () => {
     try {
       set({ loading: true });
-      console.log('Starting auth bootstrap...');
-      
+
       const token = await getItem('token');
       const refreshToken = await getItem('refreshToken');
-      const userStr = await getItem('user');
-      
-      console.log('Retrieved tokens:', { 
-        hasToken: !!token, 
-        hasRefreshToken: !!refreshToken, 
-        hasUser: !!userStr 
-      });
-      
-      if (token && refreshToken) {
+
+      // If token is missing, always force signed-out state.
+      if (!token) {
+        await deleteItem('token');
+        await deleteItem('refreshToken');
+        await deleteItem('user');
+        set({
+          token: null,
+          refreshToken: null,
+          user: null,
+          isAuthenticated: false,
+        });
+        return;
+      }
+
+      {
         // Try to validate the token by making a test request
         try {
-          // Set the token temporarily to test it
           set({ token, refreshToken });
-          
-          console.log('Testing token validity...');
-          
+
           // Make a test request to validate the token with timeout
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
+
           const response = await api.get('/auth/me', {
             signal: controller.signal
           });
-          
+
           clearTimeout(timeoutId);
           const user = response.data.user;
-          
-          console.log('Token validation successful, user:', user?.email);
-          
+
           // If successful, set authenticated state
-          set({ 
-            token, 
-            refreshToken, 
-            user, 
-            isAuthenticated: true 
+          set({
+            token,
+            refreshToken,
+            user,
+            isAuthenticated: true
           });
-          
+
           // Store user data
           await setItem('user', JSON.stringify(user));
-          console.log('Authentication restored successfully');
         } catch (error) {
-          console.log('Stored token is invalid, clearing auth state. Error:', error);
           // Token is invalid, clear everything
           await deleteItem('token');
           await deleteItem('refreshToken');
           await deleteItem('user');
-          set({ 
-            token: null, 
-            refreshToken: null, 
-            user: null, 
-            isAuthenticated: false 
+          set({
+            token: null,
+            refreshToken: null,
+            user: null,
+            isAuthenticated: false
           });
-        }
-      } else if (userStr && token) {
-        // Fallback: restore from stored user data if available
-        try {
-          const user = JSON.parse(userStr);
-          set({ 
-            token, 
-            refreshToken, 
-            user, 
-            isAuthenticated: true 
-          });
-        } catch (error) {
-          console.error('Failed to parse stored user data');
         }
       }
     } catch (error) {
-      console.error('Failed to bootstrap auth:', error);
       // Clear auth state on bootstrap error
-      set({ 
-        token: null, 
-        refreshToken: null, 
-        user: null, 
-        isAuthenticated: false 
+      set({
+        token: null,
+        refreshToken: null,
+        user: null,
+        isAuthenticated: false
       });
     } finally {
-      // Add small delay to prevent race conditions
-      setTimeout(() => {
-        set({ loading: false });
-        console.log('Auth bootstrap completed');
-      }, 100);
+      set({ loading: false });
     }
   },
   login: async (email: string, password: string) => {
@@ -186,5 +167,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
     }
   }
 }));
+
+setUnauthorizedHandler(async () => {
+  await useAuthStore.getState().logout();
+});
 
 export default useAuthStore;
