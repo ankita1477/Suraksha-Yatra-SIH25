@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
+import traceback
 from datetime import datetime, timedelta
 import numpy as np
 from database.mongodb_client import MongoDBClient
@@ -334,7 +335,7 @@ def chat():
         logger.error(f"Chatbot config error: {e}")
         return jsonify({'error': str(e)}), 503
     except Exception as e:
-        logger.error(f"Chat error: {e}")
+        logger.error(f"Chat error: {e}\n{traceback.format_exc()}")
         return jsonify({'error': 'Failed to get response from AI'}), 500
 
 
