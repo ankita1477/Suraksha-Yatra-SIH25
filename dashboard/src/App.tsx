@@ -206,6 +206,8 @@ function DashboardApp() {
   if (!token) return <LoginPanel onAuth={(t) => setToken(t)} />;
 
   return (
+    <>
+    <ChatBot />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-50 font-sans">
       {/* Enhanced Header */}
       <header className="bg-slate-800/95 backdrop-blur-xl border-b border-slate-600/30 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-xl">
@@ -466,6 +468,7 @@ function DashboardApp() {
         </main>
       </div>
     </div>
+    </>
   );
 }
 
@@ -474,7 +477,6 @@ function App() {
   return (
     <ToastProvider>
       <DashboardApp />
-      <ChatBot />
     </ToastProvider>
   );
 }
