@@ -32,6 +32,12 @@ export default defineConfig({
             });
           });
         },
+      },
+      '/ai': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ai/, ''),
+        timeout: 30000,
       }
     }
   },
